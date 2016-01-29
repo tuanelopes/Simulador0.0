@@ -1,0 +1,998 @@
+!         programa de elementos finitos em fortran 90 
+!         baseado em: The Finite Element Method, Hughes, T. J. R., (2003)
+!
+!         Eduardo Garcia e Tuane Lopes
+!         bidu@lncc.br, tuane@lncc.br
+!
+!         LNCC/MCT
+!         Petropolis, 07.2013
+
+!
+!**** new module *************************************************************
+!
+      module mHidroDinamicaRT
+!
+      implicit none
+!
+      real*8,  allocatable :: pressaoElem(:,:),  pressaoElemAnt(:)
+      real*8,  allocatable :: velocLadal(:,:), fVeloc(:,:)
+      real*8,  allocatable :: vc(:,:), ve(:,:,:)
+!     
+      public  :: hidroGeomecanicaRT
+      private :: montarMatrizVelocidadeRT,  limparSistEqAlgVelocidade
+      private :: montarSistEqAlgVelocidade
+      private :: calcularPressaoRT
+!
+      contains
+!
+!**** new *******************************************************************
+!
+!      subroutine hidroGeomecanicaRT(satElem, satElemAnt, SIGMAT, SIGMA0)
+      subroutine hidroGeomecanicaRT(satElemL,satElemL0,SIGMAT,& 
+     &           SIGMA0,TIMEINJ)
+!
+      use mAlgMatricial,     only : neqV, nAlhsV, alhsV, brhsV
+      use mAlgMatricial,     only : idiagV, idVeloc, btod
+      use mAlgMatricial,     only : solverDiretoSkyLine
+      use mAlgMatricial,     only : numCoefPorLinhaVel
+      use mGlobaisArranjos,  only : mat, c, beta
+      use mGlobaisEscalares, only : optSolver, simetriaVel
+      use mGlobaisEscalares, only : tempoSolverVel
+      use mGlobaisEscalares, only : dtBlocoTransp, tTransporte, ttv
+      use mGlobaisEscalares, only : ndofV, nvel, nnp, ttp, tmVel
+      use mMalha,            only : conecNodaisElem, conecLadaisElem
+      use mMalha,            only : numel, numelReserv, nsd, nen
+      use mMalha,            only : x, xc,numLadosReserv, numLadosElem
+      use mMalha,            only : listaDosElemsPorFace
+      use mPropGeoFisica,    only : phi, phi0, nelx, nely, nelz
+      use mPropGeoFisica,    only : calcphi, hx, hy
+      use mPropGeoFisica,    only : permkx, xkkc, xltGeo
+      use mSolucoesExternas, only : solverLapack_RT
+      use mSolucoesExternas, only : solverUMFPack, solverPardiso
+!      use mSolucoesExternas, only : solverHYPRE
+      use mSolucoesExternas, only : ApVel, AiVel
+      use mLeituraEscrita,   only : iflag_vel, iflag_pres, printd
+!
+      implicit none
+!
+      real*8 :: satElemL(numelReserv), satElemL0(numelReserv)
+      real*8 :: SIGMAT(numelReserv), SIGMA0(numelReserv)
+!
+      real*8  :: t1, t2, t3, TIMEINJ
+      integer :: i, nel, arq
+      character (len=80) :: nomeArqVel, nomeArqPres
+      real*8 :: difP, difV, difS
+      real(8) :: xlambda,xmu,bal,maxBal
+      real(8), save :: tTeste
+      real(8) :: elemAnt, elemDep, dx
+      real(8) :: difVel, maxDifVel, minDifVel
+!
+#ifdef debug
+      nomeArqVel ="velocidadeLadal_RT.txt"
+      nomeArqPres="pressao_RT.txt"
+      open(unit=206, file=nomeArqVel)
+      open(unit=207, file=nomeArqPres)
+#endif
+!
+       print*, "calculando a HIDRODINAMICA"
+! 
+!******************* VELOCIDADE **********************
+! 
+      if(.not.allocated(alhsV)) allocate(alhsV(nalhsV))
+      if(.not.allocated(brhsV)) allocate(brhsV(neqV))
+!
+      call limparSistEqAlgVelocidade()
+! 
+      call timing(t1)
+!old      call montarSistEqAlgVelocidade(nsd, satElem, PHI, PHI0, SIGMAT, SIGMA0)
+!Next Line: Modified for iterative hidrodinamics and transport 
+
+      call montarSistEqAlgVelocidade(nsd,satElemL,satElemL0, & 
+     &     PHI,PHI0,SIGMAT,SIGMA0,TIMEINJ)
+!
+      call timing(t2)
+!
+#ifdef mostrarTempos
+!      write(*,*) ' tempo montagem do sistema da velocidade ', t2-t1 
+#endif
+      tmVel=tmVel+(t2-t1)
+!
+!       write(*,'(a)', ADVANCE='NO') 'solucao do sistema de equacoes'
+!
+      if (optSolver=='lapack') then
+!          write(*,'(a)') '   //========> solver direto LAPACK'
+         call solverLapack_RT(alhsV, brhsV, neqV, idiagV, &
+     &        numCoefPorLinhaVel, conecLadaisElem, &
+     &        listaDosElemsPorFace, numLadosReserv, & 
+     &        numLadosElem, nelx, nely,nelz)
+      end if   
+!
+      if (optSolver=='umfpack') then
+!          write(*,'(a)') '   //========> solver direto UMFPACK, VELOCITY'
+         call solverUMFPack(alhsV,brhsV,ApVel,AiVel,neqV,nalhsV)
+      end if
+
+      if (optSolver=='pardiso') then
+!          write(*,'(a)') '   //========> solver direto PARDISO, VELOCITY'
+         call solverPardiso(alhsV, brhsV, ApVel, AiVel,neqV, &
+     &        nalhsV, simetriaVel, 'vel', 'fact')
+         call solverPardiso(alhsV, brhsV, ApVel, AiVel,neqV, & 
+     &        nalhsV, simetriaVel, 'vel', 'back')
+      end if
+!
+      if (optSolver=='skyline') then
+         write(*,'(a)') '   //========> solver direto SKYLINE, VELOCITY'
+         call solverDiretoSkyLine(alhsV, brhsV, idiagV, & 
+     &        nalhsV, neqV, 'vel')
+      end if
+!
+      if (optSolver=='HYPRE') then
+         write(*,'(a)') '   //========> solver iterativo HYPRE, VELOCITY'
+!          call solverHYPRE(alhsV, brhsV, ApVel, AiVel, neqV, nalhsV)
+      endif
+!
+      call btod(idVeloc,velocLadal,brhsV,ndofV,numLadosReserv)
+!
+      call timing(t3)
+#ifdef mostrarTempos
+      write(*,*) ' tempo do solver velocidade', t3-t2 
+      tempoSolverVel=tempoSolverVel+(t3-t2)
+#endif
+!
+      ttv=ttv+(t3-t1)
+! 
+      call timing(t1)
+!
+      print*, "calcular Pressao"
+!old      call calcularPressaoRT (x, conecNodaisElem, conecLadaisElem,   &
+!old                    pressaoElem, pressaoElemAnt, velocLadal,satElem,dtBlocoTransp,SIGMAT,SIGMA0)
+!Next Line Modified for Iterative hidrodinamic and transport
+      call calcularPressaoRT (x, conecNodaisElem, conecLadaisElem,   &
+     &     pressaoElem, pressaoElemAnt, velocLadal, &
+     &     satElemL, satElemL0, dtBlocoTransp, SIGMAT, SIGMA0)
+!
+      call calcve(numLadosElem,numelReserv,nsd,ndofV,nen, &
+     &            velocLadal,ve,conecLadaisElem)
+      call calcvc(nsd,nen,numelReserv,vc,ve)
+!
+      call timing(t2)
+!
+      ttp=ttp+(t2-t1)
+!
+      end subroutine hidroGeomecanicaRT
+!
+!**** new **********************************************************************
+!
+      subroutine limparSistEqAlgVelocidade()
+      use mAlgMatricial,    only: alhsV, brhsV
+!   
+         velocLadal  = 0.0d00
+         if(allocated(brhsV))  brhsV = 0.0d00 
+         if(allocated(alhsV))  alhsV = 0.0d00
+!
+      end subroutine
+!
+!**** new **********************************************************************
+!
+!old      subroutine montarSistEqAlgVelocidade(nsd, satElem, PHI, PHI0, SIGMAT, SIGMA0)
+!Next Line: Modified for iterative hidrodinamics and transport 
+      subroutine montarSistEqAlgVelocidade(nsd,satElemL,satElemL0, & 
+     &           PHI,PHI0,SIGMAT,SIGMA0,TIMEINJ)
+!
+      use mGlobaisEscalares,    only: nlvectV, ndofV
+      use mGlobaisEscalares,    only: dtBlocoTransp, nnp, nvel
+      use mAlgMatricial,        only: load, ftod, load2, alhsV, brhsV 
+      use mAlgMatricial,        only: LOADTIME, ftodTIME
+      use mAlgMatricial,        only: idiagV, idVeloc, lmV, neqV
+      use mMalha,               only: x, conecNodaisElem
+      use mMalha,               only: conecLadaisElem, numLadosElem
+      use mMalha,               only: numLadosReserv, numelReserv
+      use mMalha,               only: listaDosElemsPorFace
+      use mSolucoesExternas,    only: solverUMFPack
+!4Compressibility
+      use mMalha,               only: numel
+!
+      implicit none
+!
+      integer, intent(in) :: nsd
+      integer :: i
+      real*8  :: satElemL(numelReserv), satElemL0(numelReserv)
+      REAL(8) :: PHI(numelReserv), PHI0(numelReserv)
+      REAL(8) :: SIGMAT(numelReserv), SIGMA0(numelReserv)
+      REAL(8) :: TIMEINJ
+!
+!      if (nlvectV.gt.0) CALL LOADTIME(idVeloc,fVeloc,brhsV,ndofV,numLadosReserv,nlvectV,TIMEINJ)
+      if (nlvectV.gt.0) CALL LOAD(idVeloc,fVeloc,brhsV,ndofV, & 
+     &                       numLadosReserv,nlvectV)
+
+!      if (nlvectV.gt.0) call ftod(idVeloc,velocLadal,fVeloc,ndofV,numLadosReserv,nlvectV)
+      if (nlvectV.gt.0) call ftodTIME(idVeloc,velocLadal,fVeloc, & 
+     &                       ndofV,numLadosReserv,nlvectV,TIMEINJ)
+! 
+!old      call montarMatrizVelocidadeRT(x, conecNodaisElem, conecLadaisElem, &
+!old          alhsV, brhsV, idiagV, lmV, velocLadal, pressaoElemAnt, satElem,    &
+!old          dtBlocoTransp, PHI, PHI0, SIGMAT, SIGMA0) 
+!Next Modified for iterative hidrodinamics and transport
+!
+      call montarMatrizVelocidadeRT(x, conecNodaisElem, & 
+     &     conecLadaisElem, alhsV, brhsV, idiagV, lmV, & 
+     &     velocLadal, pressaoElemAnt, satElemL, satElemL0, &
+     &     dtBlocoTransp, PHI, PHI0, SIGMAT, SIGMA0) 
+
+      end subroutine montarSistEqAlgVelocidade
+!
+!**** new **********************************************************************
+!
+!old      subroutine montarMatrizVelocidadeRT (x, conecNodaisElem, conecLadaisElem, &
+!old                            alhs, brhs,idiagV,lmV,          &
+!old                            velocLadal, pressao, sw,        &
+!old                            dtBlocoTransp, PHI, PHI0, SIGMAT, SIGMA0 ) 
+!
+!Next Modified for iterative hidrodinamics and transport
+      subroutine montarMatrizVelocidadeRT (x,conecNodaisElem, & 
+     &           conecLadaisElem, alhs, brhs,idiagV,lmV,velocLadal, &
+     &           pressao, satElemL, satElemL0, dtBlocoTransp, & 
+     &           PHI, PHI0, SIGMAT, SIGMA0 ) 
+
+        use mAlgMatricial,     only: addrhs, addlhs, kdbc, nALHSV
+        use mAlgMatricial,     only: neqV, idVeloc, nedV
+        use mGlobaisEscalares, only: ndofV, nrowsh, npint, nnp
+        use mGlobaisEscalares, only: ligarBlocosHetBeta, iflag_beta
+        use mGlobaisEscalares, only: geomech, S3DIM
+        use mGlobaisArranjos,  only: grav, c, mat, beta
+        use mfuncoesDeForma,   only: shlq, shlqrt,shgq, shgqrt
+        use mfuncoesDeForma,   only: shlq3d, shg3d, shlqrt3d, shgqrt3d
+        use mMalha,            only: local, nsd
+        use mMalha,            only: numnp, numel, numelReserv
+        use mMalha,            only: numLadosElem, numLadosReserv, nen
+        use mPropGeoFisica,    only: nelxReserv, nelyReserv, nelzReserv
+        use mPropGeoFisica,    only: xkkc,xkkcGeo,xlt,xltGeo, xlo, xlw
+        use mPropGeoFisica,    only: perm, permkx, permky, permkz
+        use mPropGeoFisica,    only: gf1, gf2, gf3, PWELL, rhow,rhoo 
+        use mSolucoesExternas, only: addlhsCRS, ApVel, AiVel
+!..4COMPRESSIBILITY:
+        use mPropGeoFisica,    only: YOUNG, POISVECT, BULK,GRAINBLK 
+        use mPropGeoFisica,    ONLY: BULKWATER, BULKOIL
+        USE mMCMC,             ONLY: NCONDP,ELEM_CONDP,PRESPRODWELL,PRESPROD
+        use mPropGeoFisica,    only: hx,hy,hz
+!
+!.... program to calculate stifness matrix and force array for a
+!     singular problem element in one dimension
+!     form and assemble into the global left-hand-side matrix
+!                  and right-hand side vector
+!
+        implicit none
+!                                                                       
+!.... remove above card for single-precision operation               
+!       
+        real*8,  intent(in) :: x(nsd,numnp)
+        integer, intent(in) :: conecNodaisElem(nen,numel)
+        integer, intent(in) :: conecLadaisElem(numLadosELem,numelReserv)
+        real(8), intent(inout) :: alhs(nalhsV), brhs(neqV)
+        integer, intent(in) :: idiagV(neqV)
+        integer, intent(in) :: lmV(ndofV,numLadosElem,numelReserv)
+        real*8,  intent(inout) :: velocLadal(ndofV,numLadosReserv)
+!old      real*8,  intent(in)    :: pressao(numelReserv), sw(numelReserv)
+!Next 2 Lines Modified iterative Hidrodinamics and Transport
+        real*8,  intent(in) :: pressao(numelReserv)
+        real*8,  intent(in) :: satElemL(numelReserv)
+        real*8,  intent(in) :: satElemL0(numelReserv)
+        real*8,  intent(in) :: dtBlocoTransp 
+!4COMPRESSIBILITY:
+        real*8,  intent(in) :: PHI(numelReserv), PHI0(numelReserv)
+        real*8,  intent(in) :: SIGMAT(numelReserv), SIGMA0(numelReserv)
+!
+        real*8 :: xl(nsd,nen), dl(ndofV,nen)
+        real*8 :: fluxl(ndofV,nen), vnl(nsd,numLadosElem)
+        real*8 :: shgrt(nrowsh,numLadosElem,npint)
+        real*8 :: shlrt(nrowsh,numLadosElem,npint)
+        real*8 :: shg(nrowsh,nen,npint), shl(nrowsh,nen,npint)
+        real*8 :: det(npint), w(npint)
+!
+        real*8  :: elfrt(numLadosElem), elert(numLadosElem,numLadosElem)
+        integer :: nee, neesq
+!
+        integer :: nel, m 
+        integer :: l, i, j, k
+        real*8  :: pi
+        real*8  :: pix, piy, piz, sx, sy, sz, cx, cy, cz
+!
+        real(8) :: xk,yk,zk,delta,theta
+        real(8) :: h,h2,xx,yy,zz,du,dux,duy,duz,xindi,xindj,ff
+        real(8) :: c1,phii1,phii2,phii3,phij1,phij2,phij3
+        real(8) :: a11,a22,a33,divphij,divphii   
+        real(8) :: swint,pp
+        real(8) :: dt
+!
+        integer :: tid, omp_get_thread_num,omp_get_num_threads
+        integer :: numPrimeiroElemento, numUltimoElemento
+        integer :: numThreads, inicioSol, fimSol
+! 
+        logical :: diag,zerol, quad,lsym
+        real(8) :: xxlt,xxlo,xxlw,lambdab
+!...
+!... BEGIN CATALOG FOR ITERATIVE FORMULATION FOR COMPRESSIBILTY
+!
+        REAL(8) :: BULKROCK, BETACOM, BIOTCOEF, BETAT, BETAT0, BETA4P
+!
+        REAL(8) :: ALAM, AMU2, XBULK, POISSON, BETAGEO, COEFSIGM
+        REAL(8) :: DIFSIGMA, AT
+        INTEGER :: NELWELL
+        REAL(8) :: XNELWELL,PRESAUX
+!
+!... END CATALOG FOR FOR ITERATIVE FORMULATION
+!
+        nee = numLadosElem*ndofV; neesq = nee*nee
+        shlrt=0.d0
+        tid=1
+        numThreads=1
+!
+        diag = .false.
+        quad = .true.
+        pi   = 4.0d0*datan(1.0d0)
+        dt   = dtBlocoTransp
+        at = dfloat(nnp)*dt
+!
+        if(nsd==2) then
+           call shlq  (shl,w,npint,nen)
+           call shlqrt(numLadosElem,npint,w,shlrt)
+        else
+           call shlq3d  (shl,w,npint,nen)
+           call shlqrt3d(numLadosElem,npint,w,shlrt)
+        endif
+!      
+!$OMP PARALLEL FIRSTPRIVATE(tid) &
+!$OMP PRIVATE (numPrimeiroElemento, numUltimoElemento, inicioSol,fimSol) &
+!$OMP PRIVATE (xxlw,xxlo,xxlt,lambdab,xk,yk,h,h2,hx,hy,delta,theta, xl,fluxl,shg,shgrt,a11,a22,a33) &
+!$OMP PRIVATE (divphij,divphii ,phii1, phii2, phij1, phij2, AMU2, ALAM, XBULK,det,c1,xindi,xindj,vnl,nel,i,j,l,pp,m) &
+!$OMP REDUCTION(+:elert,elfrt) !,brhs,alhs)
+!
+#ifdef withOMP
+        tid=tid+omp_get_thread_num()
+        numThreads=omp_get_num_threads()
+#endif
+!
+!       if(tid==1) print*, "Em Velocidade, numThreads=",numThreads
+!
+        numPrimeiroElemento = 1
+        numUltimoElemento   = numelReserv
+        call dividirTrabalho(numPrimeiroElemento, numUltimoElemento, &
+     &     numThreads, tid-1, inicioSol, fimSol)
+!
+!rt   calcula as normais externas locais
+!      
+        vnl      = 0.d0
+        vnl(2,1) =-1.d0
+        vnl(1,2) = 1.d0
+        vnl(2,3) = 1.d0
+        vnl(1,4) =-1.d0
+        if (nsd==3) then
+           vnl(3,5)=-1.d0
+           vnl(3,6)= 1.d0
+        endif
+!!
+        do 500 nel=inicioSol,fimSol
+!
+!....    clear stiffness matrix and force array
+           elfrt=0.0d00; elert=0.0d00
+!
+!....    localize coordinates and Dirichlet b.c.
+!
+           call local(conecNodaisElem(1,nel),x,xl,nen,nsd,nsd)
+           call local(conecLadaisElem(1,nel),velocLadal,fluxl, &
+     &        numLadosElem,nedV,nedV)
+!
+           m = mat(nel)
+           quad = .true.
+!....    if (nen.eq.4.and.conecLadaisElem(3,nel).eq.conecLadaisElem(4,nel)) quad = .false.
+!
+!....    chama a shg. eh necessario pra calcular a fonte e o determinante
+!
+           if (nsd==2) then
+              call shgq (xl,det,shl,shg,npint,nel,quad,nen)
+           else
+              call shg3d(xl,det,shl,shg,npint,nel,nen)
+           endif
+!
+!....  length of the element
+           h2 = 0                                         
+           h2 = h2 + (xl(1,1)-xl(1,2))**2+(xl(2,1)-xl(2,4))**2 
+           if (nsd==3) h2 = h2 + (xl(3,1)-xl(3,5))**2                      
+           h  = dsqrt(h2)/2.d00
+           h2 = h*h   
+!
+           if (nsd==2) then
+              call shgqrt(numLadosElem,npint,hx,hy,shlrt,shgrt)
+           else
+              call shgqrt3d(numLadosElem,npint,hx,hy,hz,shlrt,shgrt)  
+           endif
+!
+!..... form stiffness matrix
+!
+           pp       = pressao(nel) 
+!
+           DIFSIGMA = (SIGMAT(NEL)-SIGMA0(NEL))/S3DIM
+!
+!...  COMPRESSIBILIDADE EQUIVALENTE ESCOAMENTO BIFASICO
+!
+           theta=1.0d0
+!
+           BULKROCK = BULK(YOUNG(NEL),POISVECT(1),S3DIM)
+           BETAGEO  = 1.0D0/BULKROCK
+           BIOTCOEF = 1.0D0 - BULKROCK/GRAINBLK(1)
+           BETAT0   = BETASTAR(PHI(NEL),BIOTCOEF,BETAGEO,satElemL0(NEL)) 
+           BETAT    = BETASTAR(PHI(NEL),BIOTCOEF,BETAGEO,satElemL(NEL))
+           BETA4P   = BETAT0/BETAT 
+           COEFSIGM = BIOTCOEF*BETAGEO/BETAT 
+
+!         write(*,*) nel,difsigma,sigmat(nel),sigma0(nel)!betageo,betat0,betat,biotcoef
+!
+           do l=1,npint
+              c1 = w(l)*det(l)
+!
+!.... calcula x, y, a pressao e suas derivadas no ponto de integracao
+!
+              xx  = 0.d0
+              yy  = 0.d0
+              if (nsd==3) zz = 0.d0
+              du  = 0.d0
+              dux = 0.d0
+              duy = 0.d0
+              if (nsd==3) duz = 0.0D0
+!
+!.... swint=0.d0      
+!
+              do i=1,nen
+                 xx = xx + shl(nrowsh,i,l)*xl(1,i)
+                 yy = yy + shl(nrowsh,i,l)*xl(2,i)
+                 if (nsd==3) zz = zz + shl(nrowsh,i,l)*xl(3,i)
+                 du  = du  + shl(nrowsh,i,l)*dl(1,i)
+                 dux = dux + shg(1,i,l)*dl(1,i)
+                 duy = duy + shg(2,i,l)*dl(1,i)
+                 if (nsd==3) duz = duz + shg(3,i,l)*dl(1,i)  
+                     !swint=swint+shg(3,i,l)*se(i,nel)
+              end do
+!
+              xxlw = xlw(satElemL(nel))
+              xxlo = xlo(satElemL(nel))
+              xxlt = xltGeo(satElemL(nel))
+!
+              lambdab = (xxlw*rhow+xxlo*rhoo)/xxlt
+!
+!.... CALCULANDO A PERMEABILIDADE FUNCCAO DA POROSIDADE EULERIANA
+!
+              XK  = XKKCGEO(PHI0(NEL),PERMKX(NEL))*XXLT
+              A11 = 1.0D0/XK
+! 
+              YK  = XKKCGEO(PHI0(NEL),PERMKY(NEL))*XXLT
+              A22 = 1.0D0/YK
+!
+              IF (NSD==3) THEN
+                 ZK  = XKKCGEO(PHI0(NEL),PERMKZ(NEL))*XXLT
+                 A33 = 1.0D0/ZK
+              ENDIF
+!.. OLD:::  parametros do penalty:  delta=dt/beta
+!
+              DELTA = DT/BETAT
+!
+!.... vetor de carga - RHS - f  =  gf0  
+!
+              gf1 = grav(1)
+              gf2 = grav(2)
+              if (nsd==3) gf3 = grav(3)
+!      
+              pix = pi*xx
+              piy = pi*yy
+              if (nsd==3) piz = pi*zz
+!      
+              sx = dsin(pix)
+              sy = dsin(piy)
+              if (nsd==3) sz = dsin(piz)
+              cx = dcos(pix)
+              cy = dcos(piy)
+              if (nsd==3) cz = dcos(piz)
+! 
+!.... fonte NO BALANCCO DE MASSA DO FLUIDO: ff
+!
+              ff = 0.d0 !gf1*sx*sy+gf2*cx*cy
+!      
+              do j=1,numLadosElem 
+                 xindj = vnl(1,j)+vnl(2,j)
+                 if (nsd==3) xindj = xindj +vnl(3,j)
+                 phij1   = shgrt(1,j,l)*c1*xindj
+                 phij2   = shgrt(2,j,l)*c1*xindj
+                 if (nsd==3) phij3 = shgrt(3,j,l)*c1*xindj
+                 divphij = shgrt(nrowsh,j,l)*c1*xindj
+!
+!.... termo de fonte
+!
+                 elfrt(j) = elfrt(j) & ! falta a integral no bordo
+     &                  + BETA4P*pp*divphij & ! efeito da pressao anterior 
+     &                  + delta*ff*divphij  &  ! fonte de massa
+     &                  + lambdab*(gf1*phij1+gf2*phij2) ! fonte gravidade 
+!
+                 elfrt(j) = elfrt(j)- COEFSIGM*DIFSIGMA*DIVPHIJ
+!
+!.... loop nos lados: indice i
+!
+                 do i=1,numLadosElem
+                    xindi = vnl(1,i)+vnl(2,i)
+                    if (nsd==3) xindi = xindi+vnl(3,i)
+                    phii1 = shgrt(1,i,l)*xindi
+                    phii2 = shgrt(2,i,l)*xindi
+                    if (nsd==3) phii3 = shgrt(3,i,l)*xindi 
+                    divphii = shgrt(nrowsh,i,l)*xindi
+!
+!.... ...  matriz de rigidez
+!     
+                    elert(i,j) = elert(i,j) + a11*phii1*phij1  &
+                         + a22*phii2*phij2  &
+                         + delta*theta*divphii*divphij
+                    if (nsd==3) elert(i,j) = elert(i,j)+a33*phii3*phij3
+                 end do ! numLadosElem,i
+!
+              end do ! numLadosElem,j
+!
+           end do ! nint,l
+!
+!.... computation of Dirichlet b.c. contribution
+!.... CALCULA A PRESSAO NO POCCO DE PRODUCAO A PARTIR DO VALOR DA PRESSAO
+!     NO FUNDO DO POCCO E LEVANDO EM CONSIDERACAO A GRAVIDADE
+           DO NELWELL=1,NCONDP
+              IF(NEL.EQ.ELEM_CONDP(NELWELL))THEN
+                 CALL DIRICHLET_POCO_GRAVIDADE(PRESPROD,NEL,HY,NCONDP, & 
+                      GF2,NELWELL,satElemL)
+                 XINDJ = VNL(1,2)+VNL(2,2)
+                 ELFRT(2)=ELFRT(2)-(PRESPRODWELL(NELWELL))*XINDJ*(HY)
+                 EXIT
+              END IF
+           END DO
+!
+           call ztest(fluxl,nee,zerol)
+  
+           if(.not.zerol) then
+              call kdbc(elert,elfrt,fluxl,nee)
+           end if
+!
+           lsym=.true.
+#ifdef withcrs
+           call addlhsCRS(alhs,elert,lmV(1,1,nel),ApVel, AiVel,nee) 
+#else
+!
+           call addlhs(alhs,elert,idiagV,lmV(1,1,nel),nee,diag,lsym) 
+#endif
+           call addrhs(brhs,elfrt,lmV(1,1,nel),nee) 
+! 
+500        continue
+
+!$OMP END PARALLEL
+
+           RETURN
+4500       FORMAT(I8,X,40(1PE15.8,2X))
+!
+         end subroutine 
+!
+!*** NEW ***** FUNCTION TO COMPUTE ROCK BULK MODULUS  *******************
+!
+      FUNCTION deplet(tempo)
+!
+      use mGlobaisEscalares, only: tt
+!
+!... COMPUTE LINEAR FACTOR TO DEPLET PRESSURE 
+!     
+      IMPLICIT NONE
+!
+      REAL(8) :: tempo, deplet, depletlin
+!
+      IF (TEMPO.LT.0.5D0*TT) THEN 
+            DEPLETLIN = 1.0D0 !  - 0.5D0*TEMPO/TT
+         ELSE
+            DEPLETLIN = 0.01D0
+      ENDIF
+!
+!      IF (TEMPO.LT.0.5D0*tt) THEN 
+!            depletlin = 1.0d0 - 0.5d0*tempo/tt
+!         ELSE
+!            depletlin = 0.75D0
+!      ENDIF
+!
+      DEPLET =  DEPLETLIN ! 0.0d0  ! 
+!
+      END FUNCTION
+!
+!*** NEW ***** FUNCTION TO COMPUTE RECIPROCAL OF BIOT MODULUS ***********
+!
+      FUNCTION BIOTMOD(POROSITY,ALPHA,SAT)
+!
+!... COMPUTE RECIPROCAL OF BIOT MODULUS,THUS 1/M: REFERENCE CHENG.PDF
+!     
+      use mPropGeoFisica,    ONLY: BULKWATER, BULKOIL, GRAINBLK
+      use mPropGeoFisica,    ONLY: RHOW, RHOO
+!
+      IMPLICIT NONE
+!
+      REAL(8) :: ALPHA, SATDENSW, SATDENSO, DENSITEQ
+      REAL(8) :: BIOTMOD, POROSITY, SAT, BULKFLUID
+      REAL(8) :: BIOTAGUA, BIOTOLEO, ONEOVERN
+!
+!new
+      ONEOVERN = (ALPHA-POROSITY)/GRAINBLK(1)
+!new
+      BIOTAGUA = POROSITY/BULKWATER + ONEOVERN
+!new
+      BIOTOLEO = POROSITY/BULKOIL   + ONEOVERN
+!
+!new
+      BIOTMOD = SAT*BIOTAGUA + (1.0D0-SAT)*BIOTOLEO
+!
+!old      SATDENSW  = SAT*RHOW
+!old      SATDENSO  = (1.0D0-SAT)*RHOO
+!old      DENSITEQ  = SATDENSW + SATDENSO
+!
+!old      BULKFLUID = (SATDENSW/BULKWATER + SATDENSO/BULKOIL)/DENSITEQ
+!
+!old      BIOTMOD   = POROSITY*BULKFLUID + (ALPHA-POROSITY)/BULKSOLID
+! 
+      END FUNCTION
+!
+!*** NEW ***** FUNCTION TO COMPUTE BETA_STAR COMPRESSIBILITY ********** 
+!
+      FUNCTION BETASTAR(POROSITY,ALPHA,BETA,SAT)
+!
+!... COMPUTE BETA_STAR COMPRESSIBILITY REFERENCE TUTORIAL.PDF
+!     
+      IMPLICIT NONE
+!
+!      REAL(8) :: BIOTMOD, ALPHA, BETA, BETASTAR, POROSITY, SAT 
+      REAL(8) :: ALPHA, BETA
+      REAL(8) :: BETASTAR, POROSITY, SAT 
+!	
+      BETASTAR = BIOTMOD(POROSITY,ALPHA,SAT) + BETA*ALPHA**2
+!     
+      END FUNCTION
+!
+!**** new *************************************************************
+!
+!old      subroutine calcularPressaoRT (x, conecNodaisElem, conecLadaisElem,  &
+!old                          pressaoElem, pressaoElemAnt, velocLadal, satElem, dtBlocoTransp,         &
+!old                          SIGMAT,SIGMA0)
+!
+!Next Line Modified for Iterative Hidrodinamic and Transport
+!
+      subroutine calcularPressaoRT (x, conecNodaisElem, & 
+     &           conecLadaisElem, pressaoElem, pressaoElemAnt,&
+     &           velocLadal, satElemL, satElemL0, dtBlocoTransp,&
+     &           SIGMAT,SIGMA0)
+!
+!.... program to calculate stifness matrix and force array for a
+!     singular problem element in one dimension
+!     form and assemble into the global left-hand-side matrix
+!                  and right-hand side vector
+!
+      use mFuncoesDeForma,   only: shlqrt, shgqrt, shlqrt3d, shgqrt3d
+      use mMalha,            only: local, nsd
+      use mMalha,            only: numnp, numel, numelReserv
+      use mMalha,            only: nen, numLadosElem, numLadosReserv
+      use mGlobaisArranjos,  only: c, mat, beta
+      use mGlobaisEscalares, only: ndofP, ndofV, nrowsh, iflag_beta
+      use mGlobaisEscalares, only: npint, ligarBlocosHetBeta
+      use mGlobaisEscalares, only: geomech, S3DIM
+      use mPropGeoFisica,    only: YOUNG, POISVECT, GRAINBLK, phi, BULK
+      use mPropGeoFisica,    only: hx,hy,hz
+!
+      implicit none
+!                                                                       
+!.... remove above card for single-precision operation               
+!       
+      real*8,  intent(in) :: x(nsd,numnp)
+      integer, intent(in) :: conecNodaisElem(nen,numel)
+      integer, intent(in) :: conecLadaisElem(numLadosElem,numelReserv)
+      real*8,  intent(inout) :: pressaoElem(ndofP,numelReserv)
+      real*8,  intent(inout) :: pressaoElemAnt(numelReserv)
+      real*8,  intent(in) :: velocLadal(ndofV,numLadosReserv)
+      real*8,  intent(in) :: satElemL(numelReserv)
+      real*8,  intent(in) :: satElemL0(numelReserv)
+      real*8,  intent(in) :: dtBlocoTransp 
+      real*8,  intent(in) :: SIGMAT(numelReserv), SIGMA0(numelReserv)
+!
+      real*8 :: xl(nsd,nen)
+      real*8, dimension(nrowsh,numLadosElem,npint) :: shgrt, shlrt
+      real*8  :: w(npint)
+      real(8) :: dt
+!
+      integer :: nel,m,i,l
+      real(8) :: vnl(nsd,numLadosElem)
+      real(8) :: xind,div,fe
+      real(8) :: pi,delta,gf1,gf2,gf3
+      real(8) :: sx,sy,sz,cx,cy,cz,pix,piy,piz,xg,yg,zg,ff
+      real(8) :: dif, aux
+!...
+!... BEGIN CATALOG FOR ITERATIVE FORMULATION
+!
+      REAL(8) :: XBULK, POISSON, XTRACCO, BULKROCK, BETACOM, BIOTCOEF
+!
+      REAL(8) :: BETAT,BETAT0,BETA4P,COEFSIGM,BETAGEO,DIFSIGMA
+!
+!... END CATALOG FOR FOR ITERATIVE FORMULATION
+!
+      dt=dtBlocoTransp
+!      
+      if(nsd==2) then
+         call shlqrt(numLadosElem,npint,w,shlrt)
+      else
+         call shlqrt3d(numLadosElem,npint,w,shlrt)
+      endif
+!
+! vetores normais
+      vnl      = 0.d0
+      vnl(2,1) =-1.d0
+      vnl(1,2) = 1.d0
+      vnl(2,3) = 1.d0
+      vnl(1,4) =-1.d0
+      if (nsd==3) then
+         vnl(3,5)=-1.d0
+         vnl(3,6)= 1.d0
+      endif
+!
+      if (nsd==2) then
+         call shgqrt(nen,npint,hx,hy,shlrt,shgrt) 
+      else
+         call shgqrt3d(numLadosElem,npint,hx,hy,hz,shlrt,shgrt)
+      endif
+!
+      do nel=1,numelReserv
+!
+!     Numeracao local das faces
+!
+!                 3
+!             ________
+!            /  6    /|
+!           /_______/ |
+!           |       |2|
+!         4 |   1   | /
+!           |_______|/
+!
+!               5
+! 
+! 
+!...  fonte      
+!
+         FF = 0.0D0 !gf1*sx*sy+gf2*cx*cy
+!
+         DIFSIGMA=(SIGMAT(NEL)-SIGMA0(NEL))/S3DIM
+!
+!.... COMPRESSIBILIDADE EQUIVALENTE ESCOAMENTO BIFASICO
+!
+         BULKROCK = BULK(YOUNG(NEL),POISVECT(1),S3DIM)
+         BETAGEO  = 1.0D0/BULKROCK
+         BIOTCOEF = 1.0D0 - BULKROCK/GRAINBLK(1)
+         BETAT0   = BETASTAR(PHI(NEL),BIOTCOEF,BETAGEO,satElemL0(NEL)) 
+         BETAT    = BETASTAR(PHI(NEL),BIOTCOEF,BETAGEO,satElemL(NEL)) 
+         BETA4P   = BETAT0/BETAT
+         COEFSIGM = BIOTCOEF*BETAGEO/BETAT 
+!
+!.. :::  parametros do penalty   OLD_LINE:   delta=dt/beta
+!
+         DELTA = DT/BETAT
+! 
+         div = 0.d0
+         do i=1,numLadosElem
+            xind = vnl(1,i)+vnl(2,i)
+            if (nsd==3) xind = xind + vnl(3,i)
+            fe  = velocLadal(1,conecLadaisElem(i,nel))*xind
+            div = div + shgrt(nrowsh,i,1)*fe 
+         end do ! numLadosElem
+!
+!.... calculo da pressao sobre o elemento
+! 
+         ff = ff-div
+!
+         XTRACCO=BETA4P*pressaoElemAnt(NEL)-COEFSIGM*DIFSIGMA
+         pressaoElem(1,nel)=RK(XTRACCO,DELTA,FF)
+!
+      end do ! nel
+!
+      return
+!
+    end  subroutine calcularPressaoRT
+!
+!=======================================================================
+!     
+!=======================================================================
+!     
+    function rk(uc,dt,ff)
+!     
+      implicit none
+!     
+      real(8) :: rk,uc,dt,ff
+      real(8) :: r1,r2,r3
+!     
+!     Evolucao no tempo (Runge-Kutta)
+!     
+!     primeira ordem
+!     
+      rk=uc + dt*ff
+!
+      return
+!
+    end function rk
+!     
+!=======================================================================
+!
+      subroutine calcvc(nsd,nen,numel,v,ve)
+!
+!     calcula a velocidade no centro dos elementos
+!
+      implicit none
+!      
+      integer  :: nen,numel,nel,no,nsd
+      real(8)  :: vx,vy
+      real(8), dimension (2,*) :: v
+      real(8), dimension (nsd,nen,*) :: ve
+!     
+      do nel=1,numel
+!
+         vx=0.d0
+         vy=0.d0
+!
+         do no=1,nen
+            vx=vx+ve(1,no,nel)
+            vy=vy+ve(2,no,nel)
+         end do
+!
+         v(1,nel)=vx/nen
+         v(2,nel)=vy/nen
+!
+      end do
+!
+      end subroutine
+!
+!============================================================================
+!
+      subroutine calcve(nedg,numel,nsd,nedfl,nen,fluxo,vel,ieedg)
+!
+!     calcula a velocidade nos nos por elemento
+
+      use mGlobaisEscalares, only: nnp
+!
+      implicit none
+!
+      integer :: numel,nsd,nen,nedfl,nedg
+      real(8), dimension(nedfl,*)   :: fluxo
+      real(8), dimension(nsd,nen,*) :: vel
+      integer, dimension(nedg,*) :: ieedg
+!
+      integer :: nel,n1,n2,n3,n4,j
+!
+!.....  loop on elements
+!
+      do nel=1,numel
+!      
+      n1=ieedg(1,nel)
+      n2=ieedg(2,nel)
+      n3=ieedg(3,nel)
+      n4=ieedg(4,nel)
+!
+      vel(1,1,nel) = fluxo(1,n4)
+      vel(2,1,nel) = fluxo(1,n1)
+      vel(1,2,nel) = fluxo(1,n2)
+      vel(2,2,nel) = fluxo(1,n1)
+      vel(1,3,nel) = fluxo(1,n2)
+      vel(2,3,nel) = fluxo(1,n3)
+      vel(1,4,nel) = fluxo(1,n4)
+      vel(2,4,nel) = fluxo(1,n3)
+!
+      end do
+
+1001  format('nnp=',i2,1x,'elemnt 602 lado=',i1,1x,'vel_x=',1PE15.8,2X,'vel_y=',1PE15.8)
+
+!
+      return
+      end subroutine
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      SUBROUTINE DIRICHLET_POCO_GRAVIDADE_APROX(BWP,NEL,HYY,NP,GRAVI,NELWELL,satElemL)
+!
+        use mMCMC,          only : PRESPRODWELL,ELEM_CONDP
+        use mPropGeoFisica, only : RHOW, RHOO
+        use mMalha,         only : numelReserv
+!
+        IMPLICIT NONE
+!
+        REAL(8)               :: HYY,GRAVI,BWP,RHO
+        INTEGER               :: NP,NELWELL,NEL,I
+        real*8,  intent(in)   :: satElemL(numelReserv)
+!
+        RHO=0.0
+        DO I=1,NP
+           RHO = RHO + RHOW*satElemL(ELEM_CONDP(I)) +  &
+                RHOO*(1.0-satElemL(ELEM_CONDP(I)))
+        END DO
+        RHO = RHO/REAL(NP)
+        PRESPRODWELL(NELWELL) = BWP+(REAL(NELWELL-1))*HYY*GRAVI*RHO
+        RETURN
+      END SUBROUTINE DIRICHLET_POCO_GRAVIDADE_APROX
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      SUBROUTINE DIRICHLET_POCO_GRAVIDADE_OLD(BHP,NEL,HYY,NP,GRAVI,NELWELL,satElemL)
+!
+        use mGlobaisEscalares, only : PRESSAOREF,COTAREF
+        use mMCMC,             only : PRESPRODWELL,ELEM_CONDP
+        use mMCMC,             only : ZFUNDOPOCCO
+        use mPropGeoFisica,    only : RHOW, RHOO, BULKWATER, BULKOIL
+        use mMalha,            only : xc,numelReserv
+!
+        IMPLICIT NONE
+!
+        REAL(8) :: HYY,GRAVI,BHP,CW,CO,A,B,DELTAZ,RHO
+        REAL(8) :: RHOW_BHP,RHOO_BHP,SAT_MEAN,AUX
+        INTEGER :: NELWELL,NEL,NP,I
+        real*8,  intent(in)   :: satElemL(numelReserv)
+!
+        AUX = xc(2,nel) - ZFUNDOPOCCO+HYY
+        SAT_MEAN = 0.0 
+        DO I=1,NP
+           SAT_MEAN = SAT_MEAN +satElemL(ELEM_CONDP(I))
+        END DO
+        SAT_MEAN = SAT_MEAN/REAL(NP)
+        CW=1.0D0/BULKWATER
+        CO=1.0D0/BULKOIL
+        RHOW_BHP = RHOW*(1.0+CW*(BHP-PRESSAOREF))
+        RHOO_BHP = RHOO*(1.0+CO*(BHP-PRESSAOREF))
+        A = CW*RHOW_BHP*SAT_MEAN + CO*RHOO_BHP*(1.0-SAT_MEAN)
+        RHO = A*GRAVI
+        B = (RHOW_BHP*SAT_MEAN + RHOO_BHP*(1.0-SAT_MEAN))
+        PRESPRODWELL(NELWELL) = (B/A)*(EXP(RHO*AUX)-1.0)+BHP
+!
+        RETURN
+!
+      END SUBROUTINE DIRICHLET_POCO_GRAVIDADE_OLD
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      SUBROUTINE DIRICHLET_POCO_GRAVIDADE(BHP,NEL,HYY,NP,GRAVI,NELWELL,satElemL)
+!
+        use mGlobaisEscalares, only : PRESSAOREF,COTAREF
+        use mMCMC,             only : PRESPRODWELL,ELEM_CONDP
+        use mMCMC,             only : ZFUNDOPOCCO
+        use mPropGeoFisica,    only : RHOW, RHOO, BULKWATER, BULKOIL
+        use mPropGeoFisica,    only : xlw,xlo,XLT
+        use mMalha,            only : xc,numelReserv
+!
+        IMPLICIT NONE
+!
+        REAL(8) :: HYY,GRAVI,BHP,CW,CO,A,B,DELTAZ,RHO
+        REAL(8) :: RHOW_BHP,RHOO_BHP,SAT_MEAN,AUX,SW
+        REAL(8) :: OIL_MOB,WATER_MOB
+        INTEGER :: NELWELL,NEL,NP,I
+        real*8,  intent(in)   :: satElemL(numelReserv)
+!
+        AUX = xc(2,nel) - ZFUNDOPOCCO+HYY
+        SAT_MEAN = 0.0 
+        DO I=1,NP
+           SW        = satElemL(ELEM_CONDP(I))
+           OIL_MOB   = XLO(SW)/XLT(SW)
+           WATER_MOB = XLW(SW)/XLT(SW)
+           SAT_MEAN  = SAT_MEAN + WATER_MOB
+!           SAT_MEAN = SAT_MEAN +satElemL(ELEM_CONDP(I))
+        END DO
+        SAT_MEAN = SAT_MEAN/REAL(NP)
+!        WRITE(*,*)SAT_MEAN
+!        WRITE(*,*)I,ELEM_CONDP(I)
+!        WRITE(*,*)SW,XLW(SW),XLO(SW),XLT(SW)
+!        WRITE(*,*)OIL_MOB,WATER_MOB,OIL_MOB+WATER_MOB
+!           STOP
+        CW=1.0D0/BULKWATER
+        CO=1.0D0/BULKOIL
+        RHOW_BHP = RHOW*(1.0+CW*(BHP-PRESSAOREF))
+        RHOO_BHP = RHOO*(1.0+CO*(BHP-PRESSAOREF))
+        A = CW*RHOW_BHP*SAT_MEAN + CO*RHOO_BHP*(1.0-SAT_MEAN)
+        RHO = A*GRAVI
+        B = (RHOW_BHP*SAT_MEAN + RHOO_BHP*(1.0-SAT_MEAN))
+        PRESPRODWELL(NELWELL) = (B/A)*(EXP(RHO*AUX)-1.0)+BHP
+!
+        RETURN
+!
+      END SUBROUTINE DIRICHLET_POCO_GRAVIDADE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       end module mHidrodinamicaRT
