@@ -1,0 +1,597 @@
+ 
+ PREPROCESSAMENTO
+ numLadosReserv=        3976
+ PRESSAO DE REFERENCIA:   101325.000000000     
+ ########################################
+ COTA DE REFERENCIA:  0.000000000000000E+000
+ ########################################
+ PRESSAO NO POCO DE PRODUCAO:   7157000.00000000     
+ ########################################
+ COTA DO FUNDO DO POCCO:  -800.000000000000     
+ ########################################
+ TEMPO PARA DESCOMPRESSAO DO POCCO:   2000.00000000000     
+ ########################################
+ ndofP=           1 neqP=           0
+ ndofV=           1 neqV=        3720
+ ndofD=           2 neqD=       10218
+ hx=     10.00000  hy=     10.00000   hz=      0.00000
+Solver para a solucao do sistema de equacoes: pardiso
+Tempo de pre-processamento da Velocidade para solver externo     0.00391
+Tempo de pre-processamento da Geomecanic para solver externo     0.12500
+ NALHSV=       14474 NALHSD=       95816
+ ###################################
+ NUMERO de IMPRESSOES SAT          160
+ Delta t IMPRESSAO           62.5000000000000     
+ ###################################
+ NUMERO de IMPRESSOES PHI          160
+ Delta t IMPRESSAO           62.5000000000000     
+ ###################################
+ NUMERO de IMPRESSOES PRES         160
+ Delta t IMPRESSAO           62.5000000000000     
+ ###################################
+ NUMERO de IMPRESSOES VEL          160
+ Delta t IMPRESSAO           62.5000000000000     
+ ###################################
+ NUMERO de IMPRESSOES DIS          160
+ Delta t IMPRESSAO           62.5000000000000     
+ ###################################
+ NUMERO de IMPRESSOES MASSA          160
+ Delta t IMPRESSAO             62.5000000000000     
+ ###################################
+ #####################
+ ARQUIVO MCMC CONC......................:conc/conc_amostra_
+ NUMERO DE IMPRESSOES:         200
+ ARQUIVO COM POSICOES DE MONITORAMENTO..:input_cond.in
+ READING FILE:input_cond.in
+Numero de Pontos de Controle:    3
+
+Coordenada do Ponto    1 (  200.0000, -750.0000)
+Coordenada do Ponto    2 (  600.0000, -750.0000)
+Coordenada do Ponto    3 ( 1000.0000, -750.0000)
+ #####################
+ #####################
+ ARQUIVO MCMC PROD......................:prod/prodF_amostra_
+ NUMERO DE IMPRESSOES:         200
+ ARQUIVO COM POSICOES DE MONITORAMENTO..:input_condProd.in
+ READING FILE:input_condProd.in
+Numero de Pontos de Controle:   16
+
+Coordenada do Ponto    1 ( 1197.5000, -797.5000)
+Coordenada do Ponto    2 ( 1197.5000, -787.5000)
+Coordenada do Ponto    3 ( 1197.5000, -777.5000)
+Coordenada do Ponto    4 ( 1197.5000, -767.5000)
+Coordenada do Ponto    5 ( 1197.5000, -757.5000)
+Coordenada do Ponto    6 ( 1197.5000, -747.5000)
+Coordenada do Ponto    7 ( 1197.5000, -737.5000)
+Coordenada do Ponto    8 ( 1197.5000, -727.5000)
+Coordenada do Ponto    9 ( 1197.5000, -717.5000)
+Coordenada do Ponto   10 ( 1197.5000, -707.5000)
+Coordenada do Ponto   11 ( 1197.5000, -697.5000)
+Coordenada do Ponto   12 ( 1197.5000, -687.5000)
+Coordenada do Ponto   13 ( 1197.5000, -677.5000)
+Coordenada do Ponto   14 ( 1197.5000, -667.5000)
+Coordenada do Ponto   15 ( 1197.5000, -657.5000)
+Coordenada do Ponto   16 ( 1197.5000, -647.5000)
+ #####################
+ #####################
+ ARQUIVO MCMC DISLOC....................:desl/desl_amostra_
+ NUMERO DE IMPRESSOES:         200
+ ARQUIVO COM POSICOES DE MONITORAMENTO..:input_condDIS.in
+ READING FILE:input_condDIS.in
+Numero de Pontos de Controle:   10
+
+Coordenada do Ponto    1 (  109.0909,   -2.5000)
+Coordenada do Ponto    2 (  218.1818,   -2.5000)
+Coordenada do Ponto    3 (  327.2727,   -2.5000)
+Coordenada do Ponto    4 (  436.3636,   -2.5000)
+Coordenada do Ponto    5 (  545.4546,   -2.5000)
+Coordenada do Ponto    6 (  654.5454,   -2.5000)
+Coordenada do Ponto    7 (  763.6364,   -2.5000)
+Coordenada do Ponto    8 (  872.7273,   -2.5000)
+Coordenada do Ponto    9 (  981.8182,   -2.5000)
+Coordenada do Ponto   10 ( 1090.9091,   -2.5000)
+ #####################
+ #####################
+ ARQUIVO MCMC PROD.....................:pres/pres_amostra_
+ NUMERO DE IMPRESSOES:         200
+ ARQUIVO COM POSICOES DE MONITORAMENTO..:input_condPres.in
+ READING FILE:input_condPres.in
+Numero de Pontos de Controle:    1
+
+Coordenada do Ponto    1 (    5.0000, -795.0000)
+ NUMERO de IMPRESSOES CONC         200
+ Delta t IMPRESSAO           50.0000000000000     
+ NUMERO de IMPRESSOES PROD         200
+ Delta t IMPRESSAO           50.0000000000000     
+ NUMERO de IMPRESSOES DISP         200
+ Delta t IMPRESSAO           50.0000000000000     
+ NUMERO de IMPRESSOES PRES         200
+ Delta t IMPRESSAO           50.0000000000000     
+ ########################################
+ ### MONITORAMENTO ######################
+ ### NUMERO DE PONTOS:           3
+ ########################################
+ ########################################
+ ### MONITORAMENTO ######################
+ ### NUMERO DE PONTOS:          16
+ ########################################
+ ########################################
+ ### MONITORAMENTO ######################
+ ### NUMERO DE PONTOS:          10
+ ########################################
+ ########################################
+ ### MONITORAMENTO ######################
+ ### NUMERO DE PONTOS:           1
+ ########################################
+ 
+ Iniciando o PROCESSAMENTO...
+NAME OF INPUT FILE (RANDOM FIELD)    0: ./fields/perm_amostra_0.dat
+K    ######################### 
+MEDIA     = 1.03158252E-13
+VARIANCIA = 9.66133181E-27
+MAXIMO    = 7.19778347E-13
+MINIMO    = 1.28540082E-18
+##############################
+
+##############################
+TAMANHO DO RESERVATORIO:
+Lx=1200.00000  Ly= 160.00000
+MALHA:
+nx=    120 ny=     16
+##############################
+
+##############################
+TAMANHO DO CAMPO ALEATORIO:
+Lx=1200.00000  Ly= 160.00000
+MALHA:
+nx=    120 ny=     16
+##############################
+
+##############################
+Tamanho do elemento:
+hx=  10.00000  hy=  10.00000
+##############################
+Tamanho do bloco geologico:
+gx=  10.00000  gy=  10.00000
+##############################
+
+ COORDENADA INICIAL DO RESERVATORIO:  0.000000000000000E+000
+  -800.000000000000     
+ COORDENADA FINAL DO RESERVATORIO..:   1200.00000000000     
+  -640.000000000000     
+ DIMENSOES DO RESERVATORIO.........:   1200.00000000000     
+   160.000000000000     
+NAME OF INPUT FILE (RANDOM FIELD)    0: ./fields/perm_amostra_0.dat
+K    ######################### 
+MEDIA     = 1.03158252E-13
+VARIANCIA = 9.66133181E-27
+MAXIMO    = 7.19778347E-13
+MINIMO    = 1.28540082E-18
+##############################
+
+##############################
+TAMANHO DO RESERVATORIO:
+Lx=1200.00000  Ly= 160.00000
+MALHA:
+nx=    120 ny=     16
+##############################
+
+##############################
+TAMANHO DO CAMPO ALEATORIO:
+Lx=1200.00000  Ly= 160.00000
+MALHA:
+nx=    120 ny=     16
+##############################
+
+##############################
+Tamanho do elemento:
+hx=  10.00000  hy=  10.00000
+##############################
+Tamanho do bloco geologico:
+gx=  10.00000  gy=  10.00000
+##############################
+
+ COORDENADA INICIAL DO RESERVATORIO:  0.000000000000000E+000
+  -800.000000000000     
+ COORDENADA FINAL DO RESERVATORIO..:   1200.00000000000     
+  -640.000000000000     
+ DIMENSOES DO RESERVATORIO.........:   1200.00000000000     
+   160.000000000000     
+NAME OF INPUT FILE (RANDOM FIELD)    0: ./fields/phi_amostra_0.dat
+PHI  ######################### 
+MEDIA     = 2.50013041E-01
+VARIANCIA = 4.99096833E-03
+MAXIMO    = 4.53493000E-01
+MINIMO    = 9.99999978E-03
+##############################
+
+##############################
+TAMANHO DO RESERVATORIO:
+Lx=1200.00000  Ly= 160.00000
+MALHA:
+nx=    120 ny=     16
+##############################
+
+##############################
+TAMANHO DO CAMPO ALEATORIO:
+Lx=1200.00000  Ly= 160.00000
+MALHA:
+nx=    120 ny=     16
+##############################
+
+##############################
+Tamanho do elemento:
+hx=  10.00000  hy=  10.00000
+##############################
+Tamanho do bloco geologico:
+gx=  10.00000  gy=  10.00000
+##############################
+
+ COORDENADA INICIAL DO RESERVATORIO:  0.000000000000000E+000
+  -800.000000000000     
+ COORDENADA FINAL DO RESERVATORIO..:   1200.00000000000     
+  -640.000000000000     
+ DIMENSOES DO RESERVATORIO.........:   1200.00000000000     
+   160.000000000000     
+NAME OF INPUT FILE (RANDOM FIELD)    0: ./fields/young_amostra_0.dat
+EE   ######################### 
+MEDIA     = 1.02965033E+09
+VARIANCIA = 4.59029863E+17
+MAXIMO    = 6.46822359E+09
+MINIMO    = 1.63375232E+08
+##############################
+
+##############################
+TAMANHO DO RESERVATORIO:
+Lx=1200.00000  Ly= 160.00000
+MALHA:
+nx=    120 ny=     16
+##############################
+
+##############################
+TAMANHO DO CAMPO ALEATORIO:
+Lx=1200.00000  Ly= 160.00000
+MALHA:
+nx=    120 ny=     16
+##############################
+
+##############################
+Tamanho do elemento:
+hx=  10.00000  hy=  10.00000
+##############################
+Tamanho do bloco geologico:
+gx=  10.00000  gy=  10.00000
+##############################
+
+ COORDENADA INICIAL DO RESERVATORIO:  0.000000000000000E+000
+  -800.000000000000     
+ COORDENADA FINAL DO RESERVATORIO..:   1200.00000000000     
+  -640.000000000000     
+ DIMENSOES DO RESERVATORIO.........:   1200.00000000000     
+   160.000000000000     
+  ==> GEOMECHANIC TASK == INIT_GEOMECH_ARRAY
+  ==> GEOMECHANIC TASK == ELASTIC_BBAR_MATRX
+  *** TASK FOR MATRIX CONFIGURATION = bbarmatrix_elast
+   //========> solver direto PARDISO, GEOMECHANICS
+ em pardiso G com, numThreads           1
+ [PARDISO]: License check was successful ... 
+ Begining reordering ... geo
+ Begining factorization  ... 
+  ==> GEOMECHANIC TASK == RIGHT_SIDE_2_SOLVE
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_elast
+   //========> solver direto PARDISO, GEOMECHANICS
+ Begining backsubstitution  ... 
+  ==> GEOMECHANIC TASK == RESETS_FORCE_VECTR
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_reset
+   
+ *** ************* ************* ************* ***
+ ***                                           ***
+ *** INITIAL DISPLACEMENTS AND STRESS COMPUTED ***
+ ***                                           ***
+ *** ************* ************* ************* ***
+   
+ ##### MONITORANDO MASSA TOTAL DE AGUA #####
+ ARQUIVO DE IMPRESSAO:
+ ./out/resultadoPressao-0.vtk                                                   
+                                                  
+ TEMPO da IMPRESSAO:0.0000               
+ ARQUIVO DE IMPRESSAO:
+ ./out/resultadoDis-0.vtk                                                       
+                                                  
+ TEMPO da IMPRESSAO:0.00000   
+ ARQUIVO DE IMPRESSAO:
+ ./out/resultadoSat-0.vtk                                                       
+                                                  
+ TEMPO da IMPRESSAO:0.0000               
+ ARQUIVO DE IMPRESSAO:
+ ./out/resultadoPhi-0.vtk                                                       
+                                                  
+ TEMPO da IMPRESSAO:0.0000               
+ ARQUIVO DE IMPRESSAO:
+ ./out/resultadoPerm-0.vtk                                                      
+                                                  
+ TEMPO da IMPRESSAO:0.0000               
+ ARQUIVO DE IMPRESSAO:
+ ./out/resultadoYoung-0.vtk                                                     
+                                                  
+ TEMPO da IMPRESSAO:0.0000               
+ #############################################################
+ PRESSAO INICIAL NO FUNDO DO POCO DE PRODUCAO: ###############
+   9541362.37284406     
+ #############################################################
+ #############################################################
+ TEMPO TOTAL PARA CHEGAR A PRESSAO MINIMA NO POCO DE PRODUCAO:
+   2000.00000000000     
+ #############################################################
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ PRESSAO NO FUNDO DO POCO.....:   9526460.10801379     
+ PRESSAO MINIMA INICIAL.......:   9541362.37284406     
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+###########################################
+###########################################
+tempo inicial:  0.00000000E+00     Passo:     1  de   800
+###########################################
+
+ITERATIVE L-INDEX =  1  ITERATIVE K-INDEX = 1 OF  1
+ calculando a HIDRODINAMICA
+ em pardiso V com, numThreads           1
+ [PARDISO]: License check was successful ... 
+ Begining reordering ... vel
+ Begining factorization  ... 
+ Begining backsubstitution  ... 
+  tempo do solver velocidade  2.343750000000000E-002
+ calcular Pressao
+  ==> GEOMECHANIC TASK == RIGHT_SIDE_2_SOLVE
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_elast
+   //========> solver direto PARDISO, GEOMECHANICS
+ Begining backsubstitution  ... 
+  ==> GEOMECHANIC TASK == ELAST_STRSS_SIGMAT
+  ==> GEOMECHANIC TASK == RESETS_FORCE_VECTR
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_reset
+
+PROPORTIONAL ERROR OF SIGMA ON ITERATION  1 IS  1.00000000E+00
+
+  ==> GEOMECHANIC TASK == UPDAT_MASS_CONTENT
+ calculando o TRANSPORTE:
+ velocidades maximas  0.647631677504483        4.53770067454017     
+ Calculando para    12.5000000000000       dias
+ dt=  0.240384615384615       0.125000000000000     
+ calculando saturacao com cr=  0.125000000000000     
+ Courant=  0.124647412308766       com           52  passos para o transporte
+ calculando saturacao com rk=           1
+ numThreads           1
+
+
+Smax:       0.2062556  Smin:       0.1962449
+
+
+
+PROPORTIONAL ERROR OF VELOC ON ITERATION  1 IS  1.00000000E+00
+
+ITERATIVE L-INDEX =  2  ITERATIVE K-INDEX = 1 OF  1
+ calculando a HIDRODINAMICA
+ em pardiso V com, numThreads           1
+ [PARDISO]: License check was successful ... 
+ Begining reordering ... vel
+ Begining factorization  ... 
+ Begining backsubstitution  ... 
+  tempo do solver velocidade  2.343750000000000E-002
+ calcular Pressao
+  ==> GEOMECHANIC TASK == RIGHT_SIDE_2_SOLVE
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_elast
+   //========> solver direto PARDISO, GEOMECHANICS
+ Begining backsubstitution  ... 
+  ==> GEOMECHANIC TASK == ELAST_STRSS_SIGMAT
+  ==> GEOMECHANIC TASK == RESETS_FORCE_VECTR
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_reset
+
+PROPORTIONAL ERROR OF SIGMA ON ITERATION  1 IS  1.00000000E+00
+
+  ==> GEOMECHANIC TASK == UPDAT_MASS_CONTENT
+ calculando o TRANSPORTE:
+ velocidades maximas  0.640260548743195        4.50072248414121     
+ Calculando para    12.5000000000000       dias
+ dt=  0.240384615384615       0.125000000000000     
+ calculando saturacao com cr=  0.125000000000000     
+ Courant=  0.123581322905875       com           52  passos para o transporte
+ calculando saturacao com rk=           1
+ numThreads           1
+
+
+Smax:       0.2062556  Smin:       0.1962308
+
+
+
+PROPORTIONAL ERROR OF VELOC ON ITERATION  2 IS  8.12494528E-03
+
+ITERATIVE L-INDEX =  3  ITERATIVE K-INDEX = 1 OF  1
+ calculando a HIDRODINAMICA
+ em pardiso V com, numThreads           1
+ [PARDISO]: License check was successful ... 
+ Begining reordering ... vel
+ Begining factorization  ... 
+ Begining backsubstitution  ... 
+  tempo do solver velocidade  2.343750000000000E-002
+ calcular Pressao
+  ==> GEOMECHANIC TASK == RIGHT_SIDE_2_SOLVE
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_elast
+   //========> solver direto PARDISO, GEOMECHANICS
+ Begining backsubstitution  ... 
+  ==> GEOMECHANIC TASK == ELAST_STRSS_SIGMAT
+  ==> GEOMECHANIC TASK == RESETS_FORCE_VECTR
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_reset
+
+PROPORTIONAL ERROR OF SIGMA ON ITERATION  1 IS  1.00000000E+00
+
+  ==> GEOMECHANIC TASK == UPDAT_MASS_CONTENT
+ calculando o TRANSPORTE:
+ velocidades maximas  0.640254786651983        4.50077682375693     
+ Calculando para    12.5000000000000       dias
+ dt=  0.240384615384615       0.125000000000000     
+ calculando saturacao com cr=  0.125000000000000     
+ Courant=  0.123582490634830       com           52  passos para o transporte
+ calculando saturacao com rk=           1
+ numThreads           1
+
+
+Smax:       0.2062555  Smin:       0.1962307
+
+
+
+PROPORTIONAL ERROR OF VELOC ON ITERATION  3 IS  1.37842637E-05
+
+ITERATIVE L-INDEX =  4  ITERATIVE K-INDEX = 1 OF  1
+ calculando a HIDRODINAMICA
+ em pardiso V com, numThreads           1
+ [PARDISO]: License check was successful ... 
+ Begining reordering ... vel
+ Begining factorization  ... 
+ Begining backsubstitution  ... 
+  tempo do solver velocidade  2.343750000000000E-002
+ calcular Pressao
+  ==> GEOMECHANIC TASK == RIGHT_SIDE_2_SOLVE
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_elast
+   //========> solver direto PARDISO, GEOMECHANICS
+ Begining backsubstitution  ... 
+  ==> GEOMECHANIC TASK == ELAST_STRSS_SIGMAT
+  ==> GEOMECHANIC TASK == RESETS_FORCE_VECTR
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_reset
+
+PROPORTIONAL ERROR OF SIGMA ON ITERATION  1 IS  1.00000000E+00
+
+  ==> GEOMECHANIC TASK == UPDAT_MASS_CONTENT
+ calculando o TRANSPORTE:
+ velocidades maximas  0.640254808570259        4.50077698303256     
+ Calculando para    12.5000000000000       dias
+ dt=  0.240384615384615       0.125000000000000     
+ calculando saturacao com cr=  0.125000000000000     
+ Courant=  0.123582494990452       com           52  passos para o transporte
+ calculando saturacao com rk=           1
+ numThreads           1
+
+
+Smax:       0.2062555  Smin:       0.1962307
+
+
+
+PROPORTIONAL ERROR OF VELOC ON ITERATION  4 IS  3.48900737E-08
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ PRESSAO NO FUNDO DO POCO.....:   9511557.84318351     
+ PRESSAO MINIMA INICIAL.......:   9541362.37284406     
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+###########################################
+###########################################
+tempo inicial:  1.25000000E+01     Passo:     2  de   800
+###########################################
+
+ITERATIVE L-INDEX =  1  ITERATIVE K-INDEX = 1 OF  1
+ calculando a HIDRODINAMICA
+ em pardiso V com, numThreads           1
+ [PARDISO]: License check was successful ... 
+ Begining reordering ... vel
+ Begining factorization  ... 
+ Begining backsubstitution  ... 
+  tempo do solver velocidade  2.343750000000000E-002
+ calcular Pressao
+  ==> GEOMECHANIC TASK == RIGHT_SIDE_2_SOLVE
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_elast
+   //========> solver direto PARDISO, GEOMECHANICS
+ Begining backsubstitution  ... 
+  ==> GEOMECHANIC TASK == ELAST_STRSS_SIGMAT
+  ==> GEOMECHANIC TASK == RESETS_FORCE_VECTR
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_reset
+
+PROPORTIONAL ERROR OF SIGMA ON ITERATION  1 IS  1.00000000E+00
+
+  ==> GEOMECHANIC TASK == UPDAT_MASS_CONTENT
+ calculando o TRANSPORTE:
+ velocidades maximas  0.471088038331804        2.64027492094807     
+ Calculando para    12.5000000000000       dias
+ dt=  0.390625000000000       0.125000000000000     
+ calculando saturacao com cr=  0.125000000000000     
+ Courant=  0.121537615596870       com           32  passos para o transporte
+ calculando saturacao com rk=           1
+ numThreads           1
+
+
+Smax:       0.2063735  Smin:       0.1943404
+
+
+
+PROPORTIONAL ERROR OF VELOC ON ITERATION  1 IS  1.00000000E+00
+
+ITERATIVE L-INDEX =  2  ITERATIVE K-INDEX = 1 OF  1
+ calculando a HIDRODINAMICA
+ em pardiso V com, numThreads           1
+ [PARDISO]: License check was successful ... 
+ Begining reordering ... vel
+ Begining factorization  ... 
+ Begining backsubstitution  ... 
+  tempo do solver velocidade  2.343750000000000E-002
+ calcular Pressao
+  ==> GEOMECHANIC TASK == RIGHT_SIDE_2_SOLVE
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_elast
+   //========> solver direto PARDISO, GEOMECHANICS
+ Begining backsubstitution  ... 
+  ==> GEOMECHANIC TASK == ELAST_STRSS_SIGMAT
+  ==> GEOMECHANIC TASK == RESETS_FORCE_VECTR
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_reset
+
+PROPORTIONAL ERROR OF SIGMA ON ITERATION  1 IS  1.00000000E+00
+
+  ==> GEOMECHANIC TASK == UPDAT_MASS_CONTENT
+ calculando o TRANSPORTE:
+ velocidades maximas  0.469951469837237        2.63858804815974     
+ Calculando para    12.5000000000000       dias
+ dt=  0.390625000000000       0.125000000000000     
+ calculando saturacao com cr=  0.125000000000000     
+ Courant=  0.121427324921757       com           32  passos para o transporte
+ calculando saturacao com rk=           1
+ numThreads           1
+
+
+Smax:       0.2063735  Smin:       0.1943365
+
+
+
+PROPORTIONAL ERROR OF VELOC ON ITERATION  2 IS  1.13328094E-03
+
+ITERATIVE L-INDEX =  3  ITERATIVE K-INDEX = 1 OF  1
+ calculando a HIDRODINAMICA
+ em pardiso V com, numThreads           1
+ [PARDISO]: License check was successful ... 
+ Begining reordering ... vel
+ Begining factorization  ... 
+ Begining backsubstitution  ... 
+  tempo do solver velocidade  2.343750000000000E-002
+ calcular Pressao
+  ==> GEOMECHANIC TASK == RIGHT_SIDE_2_SOLVE
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_elast
+   //========> solver direto PARDISO, GEOMECHANICS
+ Begining backsubstitution  ... 
+  ==> GEOMECHANIC TASK == ELAST_STRSS_SIGMAT
+  ==> GEOMECHANIC TASK == RESETS_FORCE_VECTR
+  *** TASK FOR MATRIX CONFIGURATION = right_hand_reset
+
+PROPORTIONAL ERROR OF SIGMA ON ITERATION  1 IS  1.00000000E+00
+
+  ==> GEOMECHANIC TASK == UPDAT_MASS_CONTENT
+ calculando o TRANSPORTE:
+ velocidades maximas  0.469952894025583        2.63857922627246     
+ Calculando para    12.5000000000000       dias
+ dt=  0.390625000000000       0.125000000000000     
+ calculando saturacao com cr=  0.125000000000000     
+ Courant=  0.121427035949142       com           32  passos para o transporte
+ calculando saturacao com rk=           1
+ numThreads           1
+
+
+Smax:       0.2063735  Smin:       0.1943365
+
+
+
+PROPORTIONAL ERROR OF VELOC ON ITERATION  3 IS  4.41599917E-06
+
