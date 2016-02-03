@@ -33,7 +33,6 @@
 !
       use mAlgMatricial,     only : neqV, nAlhsV, alhsV, brhsV
       use mAlgMatricial,     only : idiagV, idVeloc, btod
-      use mAlgMatricial,     only : solverDiretoSkyLine
       use mAlgMatricial,     only : numCoefPorLinhaVel
       use mGlobaisArranjos,  only : mat, c, beta
       use mGlobaisEscalares, only : optSolver, simetriaVel
@@ -47,11 +46,13 @@
       use mPropGeoFisica,    only : phi, phi0, nelx, nely, nelz
       use mPropGeoFisica,    only : calcphi, hx, hy
       use mPropGeoFisica,    only : permkx, xkkc, xltGeo
-      use mSolucoesExternas, only : solverLapack_RT
-      use mSolucoesExternas, only : solverUMFPack, solverPardiso
-!      use mSolucoesExternas, only : solverHYPRE
-      use mSolucoesExternas, only : ApVel, AiVel
+!       use mSolverPardiso, only : solverLapack_RT
+!       use mSolverPardiso, only : solverUMFPack
+!      use mSolverPardiso, only : solverHYPRE
+      use mSolverPardiso, only : ApVel, AiVel, solverPardisoEsparso
       use mLeituraEscrita,   only : iflag_vel, iflag_pres, printd
+      
+      use mSolverGaussSkyline, only : solverGaussSkyline
 !
       implicit none
 !
@@ -99,31 +100,28 @@
 !
 !       write(*,'(a)', ADVANCE='NO') 'solucao do sistema de equacoes'
 !
-      if (optSolver=='lapack') then
-!          write(*,'(a)') '   //========> solver direto LAPACK'
-         call solverLapack_RT(alhsV, brhsV, neqV, idiagV, &
-     &        numCoefPorLinhaVel, conecLadaisElem, &
-     &        listaDosElemsPorFace, numLadosReserv, & 
-     &        numLadosElem, nelx, nely,nelz)
-      end if   
-!
-      if (optSolver=='umfpack') then
-!          write(*,'(a)') '   //========> solver direto UMFPACK, VELOCITY'
-         call solverUMFPack(alhsV,brhsV,ApVel,AiVel,neqV,nalhsV)
-      end if
+!       if (optSolver=='lapack') then
+! !          write(*,'(a)') '   //========> solver direto LAPACK'
+!          call solverLapack_RT(alhsV, brhsV, neqV, idiagV, &
+!      &        numCoefPorLinhaVel, conecLadaisElem, &
+!      &        listaDosElemsPorFace, numLadosReserv, & 
+!      &        numLadosElem, nelx, nely,nelz)
+!       end if   
+! !
+!       if (optSolver=='umfpack') then
+! !          write(*,'(a)') '   //========> solver direto UMFPACK, VELOCITY'
+!          call solverUMFPack(alhsV,brhsV,ApVel,AiVel,neqV,nalhsV)
+!       end if
 
       if (optSolver=='pardiso') then
 !          write(*,'(a)') '   //========> solver direto PARDISO, VELOCITY'
-         call solverPardiso(alhsV, brhsV, ApVel, AiVel,neqV, &
-     &        nalhsV, simetriaVel, 'vel', 'fact')
-         call solverPardiso(alhsV, brhsV, ApVel, AiVel,neqV, & 
-     &        nalhsV, simetriaVel, 'vel', 'back')
+         call solverPardisoEsparso(alhsV, brhsV, ApVel, AiVel,neqV, &
+     &        nalhsV, simetriaVel, 'vel', 'full')
       end if
 !
       if (optSolver=='skyline') then
          write(*,'(a)') '   //========> solver direto SKYLINE, VELOCITY'
-         call solverDiretoSkyLine(alhsV, brhsV, idiagV, & 
-     &        nalhsV, neqV, 'vel')
+         call solverGaussSkyline(alhsV,brhsV,idiagV,nalhsV, neqV, 'full')
       end if
 !
       if (optSolver=='HYPRE') then
@@ -188,7 +186,7 @@
       use mMalha,               only: conecLadaisElem, numLadosElem
       use mMalha,               only: numLadosReserv, numelReserv
       use mMalha,               only: listaDosElemsPorFace
-      use mSolucoesExternas,    only: solverUMFPack
+      use mSolverPardiso,    only: solverUMFPack
 !4Compressibility
       use mMalha,               only: numel
 !
@@ -234,7 +232,8 @@
      &           pressao, satElemL, satElemL0, dtBlocoTransp, & 
      &           PHI, PHI0, SIGMAT, SIGMA0 ) 
 
-        use mAlgMatricial,     only: addrhs, addlhs, kdbc, nALHSV
+        use mSolverGaussSkyline,only:addrhs, addlhs 
+        use mAlgMatricial,     only: kdbc, nALHSV
         use mAlgMatricial,     only: neqV, idVeloc, nedV
         use mGlobaisEscalares, only: ndofV, nrowsh, npint, nnp
         use mGlobaisEscalares, only: ligarBlocosHetBeta, iflag_beta
@@ -249,7 +248,7 @@
         use mPropGeoFisica,    only: xkkc,xkkcGeo,xlt,xltGeo, xlo, xlw
         use mPropGeoFisica,    only: perm, permkx, permky, permkz
         use mPropGeoFisica,    only: gf1, gf2, gf3, PWELL, rhow,rhoo 
-        use mSolucoesExternas, only: addlhsCRS, ApVel, AiVel
+        use mSolverPardiso, only: addlhsCRS, ApVel, AiVel
 !..4COMPRESSIBILITY:
         use mPropGeoFisica,    only: YOUNG, POISVECT, BULK,GRAINBLK 
         use mPropGeoFisica,    ONLY: BULKWATER, BULKOIL
@@ -559,7 +558,7 @@
            call addlhsCRS(alhs,elert,lmV(1,1,nel),ApVel, AiVel,nee) 
 #else
 !
-           call addlhs(alhs,elert,idiagV,lmV(1,1,nel),nee,diag,lsym) 
+           call addlhs(alhs,elert,lmV(1,1,nel),idiagV,nee,diag,lsym) 
 #endif
            call addrhs(brhs,elfrt,lmV(1,1,nel),nee) 
 ! 

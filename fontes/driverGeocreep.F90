@@ -24,8 +24,8 @@
       use mLeituraEscrita,   only: abrirArquivosInformacoesMalha
       use mLeituraEscrita,   only: fecharArquivos
 #ifdef withHYPRE
-      use mSolucoesExternas,     only: inicializarMPI, finalizarMPI 
-!      use mSolucoesExternas,     only: myid, num_procs, mpi_comm
+      use mSolverPardiso,     only: inicializarMPI, finalizarMPI 
+!      use mSolverPardiso,     only: myid, num_procs, mpi_comm
 #endif
 !
       implicit none
@@ -1130,7 +1130,6 @@ end program reservoirSimulator
       use mGeomecanica
       use mHidrodinamicaRT,  only: pressaoElemAnt, pressaoElem
       use mAlgMatricial,     only: idDesloc, LOAD, FTOD, btod
-      use mAlgMatricial,     only: solverDiretoSkyLine
       use mAlgMatricial,     only: coldot, back, factor, idDesloc
       use mAlgMatricial,     only: ALHSD, BRHSD, NALHSD, NEQD, idiagD
       use mPropGeoFisica,    only: PORE0, PORE, PHI, PHI0, PHIEULER
@@ -1145,9 +1144,10 @@ end program reservoirSimulator
       use mGlobaisEscalares, only: nnp, nrowsh
       use mGlobaisEscalares, only: optSolver, simetriaGeo
       use mTransporte,       only: satElemAnt, satElem
-      use mSolucoesExternas, only: ApGeo, AiGeo
-      use mSolucoesExternas, only: solverUMFPack, solverPardiso
-!      use mSolucoesExternas, only: myid, num_procs, mpi_comm
+      use mSolverPardiso, only: ApGeo, AiGeo
+      use mSolverPardiso, only: solverUMFPack, solverPardisoEsparso
+!      use mSolverPardiso, only: myid, num_procs, mpi_comm
+      use mSolverGaussSkyline, only: solverGaussSkyline
 !
       implicit none
 !
@@ -1185,13 +1185,17 @@ end program reservoirSimulator
 !
       if (optSolver=='pardiso') then
          write(*,'(a)') '   //========> solver direto PARDISO, GEOMECHANICS'
-         call solverPardiso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'fact')
+        if(NNP==0) &
+        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'reor')
+        
+        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'fact')
       endif
 !
       if (optSolver=='skyline') then
          write(*,'(a)') '   //========> solver direto SKYLINE, GEOMECHANICS'
+         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'fact')
 !         call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
-         CALL FACTOR(ALHSD,IDIAGD,NALHSD,NEQD)
+!          CALL FACTOR(ALHSD,IDIAGD,NALHSD,NEQD)
       end if
 ! 
       RETURN
@@ -1203,13 +1207,14 @@ end program reservoirSimulator
 !
       IF (optSolver=='pardiso') then
          write(*,'(a)') '   //========> solver direto PARDISO, GEOMECHANICS'
-         call solverPardiso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'back')
+         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'back')
       endif
 !
       if (optSolver=='skyline') then
          write(*,'(a)') '   //========> solver direto SKYLINE, GEOMECHANICS'
 !             call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
-          CALL BACK(ALHSD,BRHSD,IDIAGD,NEQD)
+!           CALL BACK(ALHSD,BRHSD,IDIAGD,NEQD)
+            call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
       end if
 !
 !.... UPDATE DISPLACEMENT 
@@ -1234,11 +1239,12 @@ end program reservoirSimulator
       endif
       if (optSolver=='pardiso') then
          write(*,'(a)') '    |====> solver direto PARDISO, GEOMECHANICS'
-         call solverPardiso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'full')
+         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'full')
       endif
       if (optSolver=='skyline') then
          write(*,'(a)') '    |====> solver direto SKYLINE, GEOMECHANICS'
-         call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
+!          call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
+         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'full')
       end if
 !
 !.... UPDATE TRIAL DISPLACEMENT WITH INCREMENT 
@@ -1395,7 +1401,7 @@ end program reservoirSimulator
       use mHidrodinamicaRT,  only: pressaoElem, pressaoElemAnt 
       use mHidrodinamicaRT,  only: vc, ve, velocLadal, fVeloc
 #ifdef withcrs
-      use mSolucoesExternas, only: listaDosElemsPorNoCRS
+      use mSolverPardiso, only: listaDosElemsPorNoCRS
 #endif
 !
       implicit none
@@ -1549,9 +1555,9 @@ end program reservoirSimulator
 !
       use mHidrodinamicaRT,  only: fVeloc
 !
-      use mSolucoesExternas, only: criarPonteirosMatEsparsa_CRS
-      use mSolucoesExternas, only: listaDosElemsPorNoCRS
-      use mSolucoesExternas, only: criarListaVizinhosCRS
+      use mSolverPardiso, only: criarPonteirosMatEsparsa_CRS
+      use mSolverPardiso, only: listaDosElemsPorNoCRS
+      use mSolverPardiso, only: criarListaVizinhosCRS
       
       use mInputReader,      only: readNodeElementsDS, readMaterialPropertiesDS, readConstantBodyForcesDS
       use mInputReader,      only: genelFacesDS, leituraGeracaoConectividadesDS

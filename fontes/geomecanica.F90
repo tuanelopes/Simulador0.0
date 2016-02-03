@@ -162,12 +162,13 @@
       use mPropGeoFisica,    only: PORE
 !
       use mAlgMatricial,     only: rowdot, coldot
-      use mAlgMatricial,     only: addrhs, addlhs, neqD, nalhsD
+      use mAlgMatricial,     only: neqD, nalhsD
+      use mSolverGaussSkyline, only: addrhs, addlhs
 !
       use mFuncoesDeForma,   only: shgq, shlq
       use mMalha,            only: local, numnp, multab
       use mMalha,            only: nsd, numel, numelReserv, nen
-      use mSolucoesExternas, only: addlhsCRS, ApGeo, AiGeo
+      use mSolverPardiso, only: addlhsCRS, ApGeo, AiGeo
 !
       use mGlobaisEscalares, only: PRESSAOREF, COTAREF
 !
@@ -402,7 +403,7 @@
 #ifdef withcrs
       call addlhsCRS(ALHSD,ELEFFMD,LMD(1,1,nel),ApGeo,AiGeo,NEE2) 
 #else
-     CALL ADDLHS(ALHSD,ELEFFMD,IDIAGD,LMD(1,1,NEL),NEE2, &
+     CALL ADDLHS(ALHSD,ELEFFMD,LMD(1,1,NEL),IDIAGD,NEE2, &
      &            DIAG,LSYM) 
 #endif
 !
@@ -439,11 +440,12 @@
       use mPropGeoFisica,    only: YOUNG, GEOFORM, GEOINDIC
       use mPropGeoFisica,    only: POISVECT, YUNGVECT, RHODVECT
       use mAlgMatricial,     only: rowdot, coldot
-      use mAlgMatricial,     only: addrhs, addlhs, neqD, nalhsD
+      use mAlgMatricial,     only: neqD, nalhsD
+      use mSolverGaussSkyline, only: addrhs, addlhs
       use mFuncoesDeForma,   only: shgq, shlq
       use mMalha,            only: local, numnp, multab
       use mMalha,            only: nsd, numel, nen, numelReserv
-      use mSolucoesExternas, only: addlhsCRS, ApGeo, AiGeo
+      use mSolverPardiso, only: addlhsCRS, ApGeo, AiGeo
 !
       implicit none
 !
@@ -579,7 +581,7 @@
 #ifdef withcrs
      call addlhsCRS(ALHSD,ELEFFMD,LMD(1,1,nel),ApGeo,AiGeo,NEE2) 
 #else
-      CALL ADDLHS(ALHSD,ELEFFMD,IDIAGD,LMD(1,1,NEL),NEE2, &
+      CALL ADDLHS(ALHSD,ELEFFMD,LMD(1,1,NEL),IDIAGD,NEE2, &
      &            DIAG,LSYM) 
 #endif
 !
@@ -2162,7 +2164,8 @@
 !
       use mGlobaisEscalares, only: ndofD, nrowsh, S3DIM
       use mGlobaisArranjos,  only: grav
-      use mAlgMatricial,     only: rowdot, coldot, addrhs, neqD
+      use mAlgMatricial,     only: rowdot, coldot,  neqD
+      use mSolverGaussSkyline, only: addrhs
       use mFuncoesDeForma,   only: shgq,shlq
       use mMalha,            only: local, multab
       use mMalha,            only: X, conecNodaisElem,xc
