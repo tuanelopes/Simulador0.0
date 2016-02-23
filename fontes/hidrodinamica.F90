@@ -46,13 +46,11 @@
       use mPropGeoFisica,    only : phi, phi0, nelx, nely, nelz
       use mPropGeoFisica,    only : calcphi, hx, hy
       use mPropGeoFisica,    only : permkx, xkkc, xltGeo
-!       use mSolverPardiso, only : solverLapack_RT
-!       use mSolverPardiso, only : solverUMFPack
-!      use mSolverPardiso, only : solverHYPRE
       use mSolverPardiso, only : ApVel, AiVel, solverPardisoEsparso
       use mLeituraEscrita,   only : iflag_vel, iflag_pres, printd
       
       use mSolverGaussSkyline, only : solverGaussSkyline
+      use mSolverHypre
 !
       implicit none
 !
@@ -67,6 +65,9 @@
       real(8), save :: tTeste
       real(8) :: elemAnt, elemDep, dx
       real(8) :: difVel, maxDifVel, minDifVel
+      
+      real*8  ::  final_res_norm, tol
+      integer :: num_iterations
 !
 #ifdef debug
       nomeArqVel ="velocidadeLadal_RT.txt"
@@ -85,8 +86,6 @@
       call limparSistEqAlgVelocidade()
 ! 
       call timing(t1)
-!old      call montarSistEqAlgVelocidade(nsd, satElem, PHI, PHI0, SIGMAT, SIGMA0)
-!Next Line: Modified for iterative hidrodinamics and transport 
 
       call montarSistEqAlgVelocidade(nsd,satElemL,satElemL0, & 
      &     PHI,PHI0,SIGMAT,SIGMA0,TIMEINJ)
@@ -100,19 +99,6 @@
 !
 !       write(*,'(a)', ADVANCE='NO') 'solucao do sistema de equacoes'
 !
-!       if (optSolver=='lapack') then
-! !          write(*,'(a)') '   //========> solver direto LAPACK'
-!          call solverLapack_RT(alhsV, brhsV, neqV, idiagV, &
-!      &        numCoefPorLinhaVel, conecLadaisElem, &
-!      &        listaDosElemsPorFace, numLadosReserv, & 
-!      &        numLadosElem, nelx, nely,nelz)
-!       end if   
-! !
-!       if (optSolver=='umfpack') then
-! !          write(*,'(a)') '   //========> solver direto UMFPACK, VELOCITY'
-!          call solverUMFPack(alhsV,brhsV,ApVel,AiVel,neqV,nalhsV)
-!       end if
-
       if (optSolver=='pardiso') then
 !          write(*,'(a)') '   //========> solver direto PARDISO, VELOCITY'
          call solverPardisoEsparso(alhsV, brhsV, ApVel, AiVel,neqV, &
@@ -124,11 +110,37 @@
          call solverGaussSkyline(alhsV,brhsV,idiagV,nalhsV, neqV, 'full')
       end if
 !
-      if (optSolver=='HYPRE') then
-         write(*,'(a)') '   //========> solver iterativo HYPRE, VELOCITY'
-!          call solverHYPRE(alhsV, brhsV, ApVel, AiVel, neqV, nalhsV)
-      endif
-!
+     if(optSolver=='hypre') then
+
+         write(*,'(a)') ', solver iterativo HYPRE, Hidrodinamic'
+
+       call fecharMatriz_HYPRE         (A_HYPRE_V, parcsr_A_V)
+       call fecharVetor_HYPRE          (b_HYPRE_V, par_b_V   )
+       call fecharVetor_HYPRE          (u_HYPRE_V, par_u_V   )
+
+         if(.not.allocated(initialGuess_V)) then
+            allocate(initialGuess_V(neqV)); initialGuess_V=0.0
+         endif
+       
+         solver_id_V  = 1
+         precond_id_V = 1
+         tol = 1.0e-08
+         call resolverSistemaAlgHYPRE (A_HYPRE_V, parcsr_A_V, b_HYPRE_V, par_b_V, u_HYPRE_V, par_u_V, &
+                                   solver_V, solver_id_V, precond_id_V, tol,    &
+                                   num_iterations, final_res_norm, initialGuess_V, brhsV, rows_V, neqV, myid, mpi_comm)
+
+         call extrairValoresVetor_HYPRE(u_HYPRE_V, 1, neqV, rows_V,BRHSV)
+         initialGuess_V=brhsV
+
+         call destruirMatriz_HYPRE(A_HYPRE_V)
+         call destruirVetor_HYPRE (b_HYPRE_V)
+         call destruirVetor_HYPRE (u_HYPRE_V)
+
+         call criarMatriz_HYPRE  (A_HYPRE_V, Clower_V, Cupper_V, mpi_comm )
+         call criarVetor_HYPRE   (b_HYPRE_V, Clower_V, Cupper_V, mpi_comm )
+         call criarVetor_HYPRE   (u_HYPRE_V, Clower_V, Cupper_V, mpi_comm )
+
+      endif!
       call btod(idVeloc,velocLadal,brhsV,ndofV,numLadosReserv)
 !
       call timing(t3)
@@ -236,6 +248,7 @@
         use mPropGeoFisica,    ONLY: BULKWATER, BULKOIL
         USE mMCMC,             ONLY: NCONDP,ELEM_CONDP,PRESPRODWELL,PRESPROD
         use mPropGeoFisica,    only: hx,hy,hz
+        use mSolverHypre
 !
 !.... program to calculate stifness matrix and force array for a
 !     singular problem element in one dimension
@@ -543,12 +556,27 @@
            if (optSolver=='pardiso')   then
               call addlhsCRS(alhs,elert,lmV(1,1,nel),ApVel, AiVel,nee) 
            endif
+           if (optSolver=='hypre')   then
+              call addnslHYPRE(A_HYPRE_V, elert, LMV(1,1,nel), nee, lsym)
+           endif
 
            call addrhs(brhs,elfrt,lmV(1,1,nel),nee) 
 ! 
 500        continue
 
 ! $OMP END PARALLEL
+
+      if (optSolver=='hypre')   then
+       do i = 1, neqV
+           rows_V(i) = i-1 
+       end do
+       call adicionarValoresVetor_HYPRE(b_HYPRE_V, 1, neqV, rows_V, BRHS)
+
+       !call fecharMatriz_HYPRE         (A_HYPRE_V, parcsr_A_V)
+       !call fecharVetor_HYPRE          (b_HYPRE_V, par_b_V   )
+       !call fecharVetor_HYPRE          (u_HYPRE_V, par_u_V   )
+
+      endif
 
            RETURN
 4500       FORMAT(I8,X,40(1PE15.8,2X))

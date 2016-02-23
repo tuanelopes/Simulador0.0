@@ -169,6 +169,7 @@
       use mMalha,            only: local, numnp, multab
       use mMalha,            only: nsd, numel, numelReserv, nen
       use mSolverPardiso, only: addlhsCRS, ApGeo, AiGeo
+      use mSolverHypre
 !
       use mGlobaisEscalares, only: PRESSAOREF, COTAREF
 !
@@ -209,6 +210,7 @@
 !
 !.... GENERATION OF LOCAL SHAPE FUNCTIONS AND WEIGHT VALUES 
 ! 
+      stop "BBARMTRX_CREEP" 
       CALL SHLQ(SHLD,WD,NINTD,NEN)
 !
 !      CONSISTENT MATRIX
@@ -407,6 +409,10 @@
      if (optSolver=='pardiso')   then
            call addlhsCRS(ALHSD,ELEFFMD,LMD(1,1,nel),ApGeo,AiGeo,NEE2) 
      endif
+     
+     if (optSolver=='hypre')   then 
+           call addnslHYPRE(A_HYPRE_G, ELEFFMD, LMD(1,1,nel), NEE2, LSYM)
+     endif
 !
      CALL ADDRHS(BRHSD,ELRESFD,LMD(1,1,NEL),NEE2) 
 
@@ -414,6 +420,16 @@
        
  500   CONTINUE 
 ! OMP END DO
+
+
+      if (optSolver=='hypre')   then     ! creep
+       do i = 1, neqD     ! creep
+           rows_G(i) = i-1      ! creep
+       end do     ! creep
+      call adicionarValoresVetor_HYPRE(b_HYPRE_G, 1, neqD, rows_G, BRHSD)
+
+      endif  ! creep
+
 
 ! $OMP END PARALLEL
 
@@ -447,6 +463,7 @@
       use mMalha,            only: local, numnp, multab
       use mMalha,            only: nsd, numel, nen, numelReserv
       use mSolverPardiso, only: addlhsCRS, ApGeo, AiGeo
+      use mSolverHypre
 !
       implicit none
 !
@@ -473,6 +490,13 @@
       REAL(8) :: SHGBR(NROWSH,NEN)
       REAL(8) :: CBBAR(NROWB, NROWB)
       REAL(8) :: C1, POISSON
+!
+      character(len=11) :: nomeA
+      character(len=11) :: nomeB
+      integer :: ierr
+      nomeA = "Alhs00.out."
+      nomeB = "brhs00.out."
+
 !
 !.... GENERATION OF LOCAL SHAPE FUNCTIONS AND WEIGHT VALUES 
 ! 
@@ -586,6 +610,12 @@
       if (optSolver=='pardiso')   then      
           call addlhsCRS(ALHSD,ELEFFMD,LMD(1,1,nel),ApGeo,AiGeo,NEE2) 
       endif
+
+     if (optSolver=='hypre')   then ! elast
+           !write(*,*) "  call addnslHYPRE(A_HYPRE_G, ELEFFMD" ! elast
+           !write(*,*) nel, "  lmD =" , LMD(:,:,nel) 
+           call addnslHYPRE(A_HYPRE_G, ELEFFMD, LMD(1,1,nel), NEE2, LSYM) ! elast
+     endif ! elast
 !
       CALL ADDRHS(BRHSD,ELRESFD,LMD(1,1,NEL),NEE2)
 !
@@ -595,6 +625,21 @@
  450   CONTINUE
 !
  500   CONTINUE
+
+       if (optSolver=='hypre')   then   ! elast
+          do i = 1, neqD   ! elast
+             rows_G(i) = i-1    ! elast
+          end do   ! elast
+          write(*,*) " brhsD =", brhsd(1:5)
+          write(*,*) " brhsD =", brhsd(neqd-4:neqd)
+       
+          call adicionarValoresVetor_HYPRE(b_HYPRE_G, 1, neqD, rows_G, BRHSD)   ! elast
+                                                                   ! elast
+        ! call fecharMatriz_HYPRE            (A_HYPRE_G, parcsr_A_G)   ! elast
+          call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   )   ! elast
+          call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )   ! elast
+
+       end if   ! elast
 !
       RETURN
 !
@@ -2164,7 +2209,7 @@
 !
       SUBROUTINE VECTOR_SOURC(satElem, p, GEOPRSR, brhsd, lmD)
 !
-      use mGlobaisEscalares, only: ndofD, nrowsh, S3DIM
+      use mGlobaisEscalares, only: ndofD, nrowsh, S3DIM, optSolver
       use mGlobaisArranjos,  only: grav
       use mAlgMatricial,     only: rowdot, coldot,  neqD
       use mSolverGaussSkyline, only: addrhs
@@ -2178,6 +2223,7 @@
       use mPropGeoFisica,    only: PORE
 !
       use mGlobaisEscalares, only: PRESSAOREF, COTAREF
+      use mSolverHypre
 !
 !.... PROGRAM TO COMPUTE PLASTIC DEFORMATION OVER THE MACRO DOMAIN 
 ! 
@@ -2355,6 +2401,13 @@
 !      do 660 i=1,neqD
 !          write(3030,*) i, brhsd(i)
 !660   continue
+
+      if (optSolver=='hypre')   then
+         call adicionarValoresVetor_HYPRE(b_HYPRE_G, 1, neqD, rows_G, BRHSD)
+   !      call fecharMatriz_HYPRE            (A_HYPRE_G, parcsr_A_G)  ! creep
+         call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   )  ! creep
+   !      call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )  ! creep
+      endif
 
       RETURN
  4500 FORMAT(I7,X,40(1PE15.8,2X))

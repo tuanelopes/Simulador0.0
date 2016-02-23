@@ -23,17 +23,15 @@
       use mGlobaisEscalares, only: exec, SOLIDONLY, SALTCREEP
       use mLeituraEscrita,   only: abrirArquivosInformacoesMalha
       use mLeituraEscrita,   only: fecharArquivos
-#ifdef withHYPRE
-      use mSolverHypre,     only: inicializarMPI, finalizarMPI 
-#endif
+      use mSolverHypre,      only: inicializarMPI, finalizarMPI
+      use mSolverHypre,      only: myid, num_procs, mpi_comm
 !
       implicit none
 !
-      integer          :: myid, num_procs
-      integer (KIND=8) :: mpi_comm
       CHARACTER*128    :: FLAG 
 !-----------------------------------------------------------------------
 #ifdef withHYPRE
+      print*, "inicializando MPI"
       call inicializarMPI                 (myid, num_procs, mpi_comm)
 #endif
 !
@@ -610,8 +608,7 @@ end program reservoirSimulator
 !-----------------------------------------------------------------------
 !
       DO NNP=1,NVEL
-       if(nnp==3) stop
-!
+
 ! DESPRESURIZACAO LENTA DO POCO DE PRODUCAO
          PRESPROD = DESPRESSURIZAR(NPRESPRODWELL,NNP, &
      &                             PRESMEDIAINICIAL,AUX,PRESPROD)
@@ -1143,10 +1140,10 @@ end program reservoirSimulator
       use mGlobaisEscalares, only: nnp, nrowsh
       use mGlobaisEscalares, only: optSolver, simetriaGeo
       use mTransporte,       only: satElemAnt, satElem
-      use mSolverPardiso, only: ApGeo, AiGeo
-      use mSolverPardiso, only: solverPardisoEsparso
-!      use mSolverPardiso, only: myid, num_procs, mpi_comm
+      use mSolverPardiso,    only: ApGeo, AiGeo
+      use mSolverPardiso,    only: solverPardisoEsparso
       use mSolverGaussSkyline, only: solverGaussSkyline
+      use mSolverHypre
 !
       implicit none
 !
@@ -1154,6 +1151,8 @@ end program reservoirSimulator
 !
       real*8           :: t1,t2
       integer          :: i, j, k
+      real*8  ::  final_res_norm, tol
+      integer :: num_iterations
 !
       CHARACTER*18, DIMENSION(9) :: REFTASK
 !
@@ -1181,7 +1180,40 @@ end program reservoirSimulator
 200   CONTINUE     !....   fase=='ELASTIC_BBAR_MATRX'
 !
       call montarSistEqAlgGEO('bbarmatrix_elast',satElem)
+
       
+          write(*,*) " 1 valores nos extremos do vetor BRHS  "
+          write(*,'(6e16.8)') brhsD(1    :6)
+          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
+      
+      if(optSolver=='hypre') then
+
+         call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
+         call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
+         call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
+
+         write(*,'(a)') ', solver iterativo HYPRE, GEOMECHANIC'
+         if(.not.allocated(initialGuess_G)) then
+            allocate(initialGuess_G(neqD)); initialGuess_G=0.0
+         endif
+       
+         solver_id_G  = 1
+         precond_id_G = 1
+         tol = 1.0e-08
+         call resolverSistemaAlgHYPRE (A_HYPRE_G, parcsr_A_G, b_HYPRE_G, par_b_G, u_HYPRE_G, par_u_G, &
+                                   solver_G, solver_id_G, precond_id_G, tol,    &
+                                   num_iterations, final_res_norm, initialGuess_G, brhsD, rows_G, neqD, myid, mpi_comm)
+
+         call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
+         initialGuess_G=brhsD
+
+
+         call destruirVetor_HYPRE(b_HYPRE_G)
+         call destruirVetor_HYPRE(u_HYPRE_G)
+         call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+         call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+
+      endif
 !
       if (optSolver=='pardiso') then
          write(*,'(a)') '   //========> solver direto PARDISO, GEOMECHANICS'
@@ -1189,14 +1221,19 @@ end program reservoirSimulator
         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'reor')
         
         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'fact')
+        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'back')
       endif
+!
 !
       if (optSolver=='skyline') then
          write(*,'(a)') '   //========> solver direto SKYLINE, GEOMECHANICS'
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'fact')
-!         call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
-!          CALL FACTOR(ALHSD,IDIAGD,NALHSD,NEQD)
+         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
       end if
+
+          write(*,*) " 1 valores nos extremos do vetor solucao,  "
+          write(*,'(6e16.8)') brhsD(1    :6)
+          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 ! 
       RETURN
 !
@@ -1204,6 +1241,38 @@ end program reservoirSimulator
 !
 
       CALL montarSistEqAlgGEO('right_hand_elast',satElem)
+
+          write(*,*) " 2 valores nos extremos do vetor BRHS  "
+          write(*,'(6e16.8)') brhsD(1    :6)
+          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
+      
+      if(optSolver=='hypre') then
+
+!         call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
+         call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
+         call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
+
+         write(*,'(a)') ', solver iterativo HYPRE, GEOMECHANIC'
+         if(.not.allocated(initialGuess_G)) then
+            write(*,'(a)') ', allocate(initialGuessGeo(neqD)); initialGuessGeo=0.0 '
+            allocate(initialGuess_G(neqD)); initialGuess_G=0.0
+         endif
+       
+         solver_id_G  = 1
+         precond_id_G = 1
+         tol = 1.0e-08
+         call resolverSistemaAlgHYPRE (A_HYPRE_G, parcsr_A_G, b_HYPRE_G, par_b_G, u_HYPRE_G, par_u_G, &
+                                   solver_G, solver_id_G, precond_id_G, tol,    &
+                                   num_iterations, final_res_norm, initialGuess_G, brhsD, rows_G, neqD, myid, mpi_comm)
+                                   
+         call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
+         initialGuess_G=brhsD
+
+         call destruirVetor_HYPRE(b_HYPRE_G)
+         call destruirVetor_HYPRE(u_HYPRE_G)
+         call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+         call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+      endif
 !
       IF (optSolver=='pardiso') then
          write(*,'(a)') '   //========> solver direto PARDISO, GEOMECHANICS'
@@ -1212,10 +1281,12 @@ end program reservoirSimulator
 !
       if (optSolver=='skyline') then
          write(*,'(a)') '   //========> solver direto SKYLINE, GEOMECHANICS'
-!             call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
-!           CALL BACK(ALHSD,BRHSD,IDIAGD,NEQD)
-            call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
+         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
       end if
+
+          write(*,*) " 2 valores nos extremos do vetor solucao,  "
+          write(*,'(6e16.8)') brhsD(1    :6)
+          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 !
 !.... UPDATE DISPLACEMENT 
 ! 
@@ -1235,6 +1306,35 @@ end program reservoirSimulator
 !     
       WRITE(*,4000) RESIDUAL,resmax
 
+          write(*,*) " 3 valores nos extremos do vetor BRHS  "
+          write(*,'(6e16.8)') brhsD(1    :6)
+          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
+
+      if(optSolver=='hypre') then
+
+         write(*,'(a)') ', solver iterativo HYPRE, GEOMECHANIC'
+         if(.not.allocated(initialGuess_G)) then
+            write(*,'(a)') ', allocate(initialGuessGeo(neqD)); initialGuessGeo=0.0 '
+            allocate(initialGuess_G(neqD)); initialGuess_G=0.0
+         endif
+       
+         solver_id_G  = 1
+         precond_id_G = 1
+         tol = 1.0e-08
+         call resolverSistemaAlgHYPRE (A_HYPRE_G, parcsr_A_G, b_HYPRE_G, par_b_G, u_HYPRE_G, par_u_G, &
+                                   solver_G, solver_id_G, precond_id_G, tol,    &
+                                   num_iterations, final_res_norm, initialGuess_G, brhsD, rows_G, neqD, myid, mpi_comm)
+                                   
+                                   
+         call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
+         initialGuess_G=brhsD
+
+         call destruirVetor_HYPRE(b_HYPRE_G)
+         call destruirVetor_HYPRE(u_HYPRE_G)
+         call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+         call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+      endif      
+      
       if (optSolver=='pardiso') then
          write(*,'(a)') '    |====> solver direto PARDISO, GEOMECHANICS'
          call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'full')
@@ -1244,6 +1344,10 @@ end program reservoirSimulator
 !          call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'full')
       end if
+
+          write(*,*) " 3 valores nos extremos do vetor solucao,  "
+          write(*,'(6e16.8)') brhsD(1    :6)
+          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 !
 !.... UPDATE TRIAL DISPLACEMENT WITH INCREMENT 
 !
@@ -1560,6 +1664,7 @@ end program reservoirSimulator
       use mInputReader,      only: readNodeElementsDS, readMaterialPropertiesDS, readConstantBodyForcesDS
       use mInputReader,      only: genelFacesDS, leituraGeracaoConectividadesDS
 
+      use mSolverHypre
 !
       use mGeomecanica
 !
@@ -1582,6 +1687,8 @@ end program reservoirSimulator
 
       character(len=50) keyword_name
       integer :: ierr
+      
+      integer*4 :: localSize_V, localSize_G
 !
 !.... calculate hx, hy, hz
 !
@@ -1736,7 +1843,7 @@ end program reservoirSimulator
       simetriaGeo=.true. ! 0 para não simetrico ou 1 para simetrico
 #endif
 #ifdef withHYPRE
-      optSolver='HYPRE'
+      optSolver='hypre'
       simetriaVel=.false.
       simetriaGeo=.false. 
 #endif
@@ -1787,6 +1894,40 @@ end program reservoirSimulator
 #endif
 !
       print*, "NALHSV=", NALHSV, "NALHSD=", NALHSD
+      
+      if(optSolver=="hypre") then
+      
+         Clower_V = 1 - 1
+         Cupper_V = neqV-1
+         localSize_V=CUpper_V-Clower_V+1
+         if(.not.allocated(rows_V)) allocate(rows_V(localSize_V))
+         do i = 1, localSize_V
+            rows_V(i) = i - 1
+         end do
+         call criarMatriz_HYPRE    (A_HYPRE_V, Clower_V, Cupper_V, mpi_comm )
+         call criarVetor_HYPRE     (b_HYPRE_V, Clower_V, Cupper_V, mpi_comm )
+         call criarVetor_HYPRE     (u_HYPRE_V, Clower_V, Cupper_V, mpi_comm )
+      
+         Clower_G = 1 - 1
+         Cupper_G = neqD-1
+         localSize_G=CUpper_G-Clower_G+1
+         if(.not.allocated(rows_G)) allocate(rows_G(localSize_G))
+         do i = 1, localSize_G
+            rows_G(i) = i - 1
+         end do
+         call criarMatriz_HYPRE    (A_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+         call criarVetor_HYPRE     (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+         call criarVetor_HYPRE     (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+
+     endif 
+      
+      
+      
+      
+      
+      
+      
+      
 !
       return
 !
