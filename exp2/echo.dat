@@ -424,3 +424,110 @@ EXPE
             2453                   1              1
             2454                   1              1
             2455                   1              1
+            2456                   1              1
+            2457                   1              1
+            2458                   1              1
+            2459                   1              1
+            2460                   1              1
+            2461                   1              1
+            2462                   1              1
+            2463                   1              1
+            2464                   1              1
+            2465                   1              1
+            2466                   1              1
+            2467                   1              1
+            2468                   1              1
+            2500                   1              0
+            2539                   1              0
+            2571                   1              0
+            2610                   1              0
+            2642                   1              0
+            2681                   1              0
+            2713                   1              0
+            2752                   1              0
+            2784                   1              0
+            2823                   1              0
+            2939                   1              0
+            2984                   1              0
+            3117                   1              0
+            3160                   1              0
+            3938                   1              0
+            3981                   1              0
+            4114                   1              0
+            4159                   1              0
+            4245                   1              0
+1 n o d a l   b o u n d a r y   c o n d i t i o n          c o  d e s
+
+
+      node no.         dof1      dof2
+            4284                   1              0
+            4316                   1              0
+            4355                   1              0
+            4387                   1              0
+            4426                   1              0
+            4458                   1              0
+            4497                   1              0
+            4529                   1              0
+            4568                   1              0
+            4600                   1              0
+            4639                   1              0
+            4671                   1              0
+            4710                   1              0
+            4742                   1              0
+            4781                   1              0
+            4813                   1              0
+            4852                   1              0
+            4884                   1              0
+            4923                   1              0
+            4955                   1              0
+            4994                   1              0
+            5026                   1              0
+            5065                   1              0
+            5097                   1              0
+            5136                   1              0
+
+
+ two/three-n o d e    e l e m e n t s 
+
+      element type number . . . . . . . . . . (ntype ) =          1
+
+      number of elements  . . . . . . . . . . (numel ) =       5108
+
+      number of element material sets . . . . (numat ) =          1
+
+      number of element nodes . . . . . . . . (nen   ) =          4
+
+      number of integration points. . . . . . (npint  ) =          9
+
+
+
+ m a t e r i a l   s e t   d a t a                      
+
+      number of material sets . . . . . . . . . . (numat ) =          1
+
+
+  set    Kx           Ky          Kz
+    1   1.0000E+00  1.0000E+08  1.0000E+08
+
+
+
+ g r a v i t y   v e c t o r   c o m p o n e n t s     
+
+      exemplo 1. . . . . . . . . . . . . .  =  0.00000000E+00
+
+      exemplo 2 . . . . . . . . . . . . . . = -1.00000000E+01
+
+      exemplo 3............................ =  0.00000000E+00
+
+
+Calculo das velocidades nodais
+
+ e q u a t i o n    s y s t e m    d a t a              
+
+      number of equations . . . . . . . . . . . . (neq    ) =     3720
+
+      number of terms in left-hand-side matrix  . (nalhs  ) =       637558
+
+      mean half bandwidth . . . . . . . . . . . . (meanbw ) =      171
+
+      memoria necessaria para a matriz do sistema  (Mbytes)  =   0.51E+01
