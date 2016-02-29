@@ -36,9 +36,9 @@
       use mAlgMatricial,     only : numCoefPorLinhaVel
       use mGlobaisArranjos,  only : mat, c, beta
       use mGlobaisEscalares, only : optSolver, simetriaVel
-      use mGlobaisEscalares, only : tempoSolverVel
-      use mGlobaisEscalares, only : dtBlocoTransp, tTransporte, ttv
-      use mGlobaisEscalares, only : ndofV, nvel, nnp, ttp, tmVel
+      use mGlobaisEscalares, only : tempoSolverVel,tempoMontagemVel,tempoTotalPressao
+      use mGlobaisEscalares, only : dtBlocoTransp, tTransporte
+      use mGlobaisEscalares, only : ndofV, nvel, nnp
       use mMalha,            only : conecNodaisElem, conecLadaisElem
       use mMalha,            only : numel, numelReserv, nsd, nen
       use mMalha,            only : x, xc,numLadosReserv, numLadosElem
@@ -93,14 +93,14 @@
       call timing(t2)
 !
 #ifdef mostrarTempos
-!      write(*,*) ' tempo montagem do sistema da velocidade ', t2-t1 
+      write(*,*) ' tempo montagem do sistema da velocidade ', t2-t1 
 #endif
-      tmVel=tmVel+(t2-t1)
+      tempoMontagemVel=tempoMontagemVel+(t2-t1)
 !
-!       write(*,'(a)', ADVANCE='NO') 'solucao do sistema de equacoes'
+      write(*,'(a)', ADVANCE='NO') 'solucao do sistema de equacoes'
 !
       if (optSolver=='pardiso') then
-!          write(*,'(a)') '   //========> solver direto PARDISO, VELOCITY'
+         write(*,'(a)') '   //========> solver direto PARDISO, VELOCITY'
          call solverPardisoEsparso(alhsV, brhsV, ApVel, AiVel,neqV, &
      &        nalhsV, simetriaVel, 'vel', 'full')
       end if
@@ -146,17 +146,11 @@
       call timing(t3)
 #ifdef mostrarTempos
       write(*,*) ' tempo do solver velocidade', t3-t2 
-      tempoSolverVel=tempoSolverVel+(t3-t2)
 #endif
-!
-      ttv=ttv+(t3-t1)
+      tempoSolverVel=tempoSolverVel+(t3-t2)
 ! 
+      print*, "Calculando Pressao"
       call timing(t1)
-!
-      print*, "calcular Pressao"
-!old      call calcularPressaoRT (x, conecNodaisElem, conecLadaisElem,   &
-!old                    pressaoElem, pressaoElemAnt, velocLadal,satElem,dtBlocoTransp,SIGMAT,SIGMA0)
-!Next Line Modified for Iterative hidrodinamic and transport
       call calcularPressaoRT (x, conecNodaisElem, conecLadaisElem,   &
      &     pressaoElem, pressaoElemAnt, velocLadal, &
      &     satElemL, satElemL0, dtBlocoTransp, SIGMAT, SIGMA0)
@@ -167,7 +161,10 @@
 !
       call timing(t2)
 !
-      ttp=ttp+(t2-t1)
+#ifdef mostrarTempos
+      write(*,*) ' Tempo para calculo da Pressao', t3-t2 
+#endif
+      tempoTotalPressao=tempoTotalPressao+(t2-t1)
 !
       end subroutine hidroGeomecanicaRT
 !

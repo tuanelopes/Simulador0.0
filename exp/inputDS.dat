@@ -548,13 +548,13 @@ CreepParameters.inc
 0.0
 }
 *tempo_total_de_simulacao{
-1.0D2
+1.0D4
 }
 *numero_de_calculos_da_velocidade{
-400
+800
 }
 *tempo_de_inicio_de_injecao{
-1.01D3
+1.00D3
 }
 *pressao_de_referencia{
 1.013250E+05

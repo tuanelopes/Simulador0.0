@@ -57,9 +57,12 @@
 
       real(8) :: tzero,tTransporte,tc,tt,dtBlocoTransp
       real(8) :: tempoNucTrans
-      real*8  :: ttv, ttp, tts, tempoSolverVel
-      real*8  :: tmVel, tmGeo, tsGeo
-      real*8  :: tgeoFase1, tgeoFase2, tgeoFase3, tgeoFase4, ttgeo
+      
+      real(8) :: tempoTotalVelocidade,tempoTotalPressao
+      real(8) :: tempoTotalTransporte,tempoTotalGeomecanica
+!
+      real*8  :: tempoMontagemVel, tempoSolverVel
+      real*8  :: tempoMontagemGeo, tempoSolverGeo
 
       integer :: geomech
       logical :: ligarBlocosHetBeta=.false.

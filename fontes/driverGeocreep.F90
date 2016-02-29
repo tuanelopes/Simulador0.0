@@ -29,6 +29,8 @@
       implicit none
 !
       CHARACTER*128    :: FLAG 
+      real*8 :: t1, t2
+      
 !-----------------------------------------------------------------------
 #ifdef withHYPRE
       print*, "inicializando MPI"
@@ -40,7 +42,12 @@
       call abrirArquivosInformacoesMalha ()
       print*, ""
       print*, "PREPROCESSAMENTO" 
+      call timing(t1)
       call preprocessador_DS()
+      call timing(t2)
+#ifdef mostrarTempos
+      write(*,*) "Tempo de preprocessamento=", t2-t1 
+#endif
 !
 !.... solution phase
 !
@@ -77,6 +84,9 @@ end program reservoirSimulator
       use mGlobaisEscalares, only: nlvectP, nlvectV, nlvectD
       use mGlobaisEscalares, only: simetriaGeo, simetriaVel, optSolver
       use mGlobaisEscalares, only: geomech, novaMalha
+      use mGlobaisEscalares, only: tempoTotalVelocidade,tempoTotalPressao
+      use mGlobaisEscalares, only: tempoTotalTransporte,tempoTotalGeomecanica
+      use mGlobaisEscalares, only: tempoMontagemGeo,tempoSolverGeo,tempoMontagemVel,tempoSolverVel
 !
       use mAlgMatricial,     only: idVeloc, idDesloc, idiagV, idiagD
       use mAlgMatricial,     only: neqV, nalhsV, neqP, neqD, nalhsD
@@ -110,7 +120,6 @@ end program reservoirSimulator
       use mInputReader,      only: readInputFileDS, LEIturaGERacaoCOORdenadasDS
       use mInputReader,      only: leituraCodigosCondContornoDS,leituraValoresCondContornoDS
 !
-!
       implicit none
 !
       real*8            :: t1, t2
@@ -118,9 +127,18 @@ end program reservoirSimulator
       integer           :: i, neq
       
       character(len=50) :: keyword_name
+!     
+      tempoTotalVelocidade  = 0.d00
+      tempoTotalPressao     = 0.d00
+      tempoTotalTransporte  = 0.d00
+      tempoTotalGeomecanica = 0.d00
+      tempoMontagemGeo=0.d00; tempoSolverGeo=0.d00
+      tempoMontagemVel=0.d00; tempoSolverVel=0.d00
 !
 !.... Tipo Malha
+!
       novaMalha = .false.
+!
 !.... input phase
 !
       INITS3    = .TRUE.
@@ -131,10 +149,6 @@ end program reservoirSimulator
       open(unit=ifdata, file= 'inputDS.dat'  )
       call readInputFileDS(ifdata)
       call readSetupPhaseDS
-!       
-!       CALL ECHO
-! !
-!       READ(iin,'(A)') TypeProcess
 !
 !.... STRESS DIMENSION PHISICS: S3DIM
 !
@@ -146,19 +160,8 @@ end program reservoirSimulator
 !
       IF (SOLIDONLY) INITS3 = .TRUE.
 !
-!       read(iin,1000) title
-!
-!
-!       read(iin,'(4i10)') exec,iprtin,nsd, geomech
-!.... Mesh Type, Dirichlet and Neumann Conditions for GeoMechanics 
-!       read(iin,'(5I10)') IrregMesh, Dirichlet, Neumann, I4SeaLoad
 !.... Logical novaMalha
       IF (IrregMesh.eq.1) novaMalha=.true.
-!
-!       read(iin,'(6i10)') numnp, numel, nelx, nely, nelz, optCC
-!       read(iin,'(5i10)') numnpReserv, numelReserv, & 
-!      &                   nelxReserv, nelyReserv, nelzReserv
-!       read(iin,'(3i10)') nlvectP, nlvectV, nlvectD
 !
       write(iecho,1000) title 
       write(iecho,3000) exec, iprtin, nsd
@@ -187,7 +190,6 @@ end program reservoirSimulator
           CYLINDER = .TRUE.
           GEOMECLAW(1) = 'CREEP'
       ENDIF
-!             stop
 !
 !.... initialization phase
 !
@@ -205,14 +207,10 @@ end program reservoirSimulator
 !
 !.... input coordinate data
 !
-!       call LEIturaGERacaoCOORdenadas(x,nsd,numnp, iin, icoords, iprtin)
       call LEITuraGERAcaoCOORdenadas_DS(x,nsd,numnp, iin, icoords, iprtin)
 !
 !.... input boundary condition data and establish equation numbers
 !
-!       call leituraCodigosCondContorno(idVeloc,ndofV,numLadosReserv, & 
-!      &     neq,iin,iecho,iprtin)
-!       neqV = neq
       keyword_name = "codigos_cond_contorno_veloc"
       call leituraCodigosCondContornoDS(keyword_name, idVeloc,ndofV,numLadosReserv,neqV,iecho,iprtin)    
 !
@@ -220,10 +218,6 @@ end program reservoirSimulator
 !
 !.... INPUT GEOMECHANIC DIRICHLET CONDITION DATA AND ESTABLISH EQUATION NUMBERS
 !
-!       call ReadDirichlet4GeoMechanic(idDesloc,ndofD,numnp, & 
-!      &     neq,iin,iecho,iprtin)
-!      neqD = neq
-      
       keyword_name = "codigos_cond_contorno_desloc"
       call leituraCodigosCondContornoDS(keyword_name,idDesloc,ndofD,numnp,neqD,iecho,iprtin)  
 
@@ -235,15 +229,11 @@ end program reservoirSimulator
 !
 !.... input nodal force and prescribed kinematic boundary-value data
 !
-!       if (nlvectV.gt.0) call leituraValoresCondContorno(fVeloc,ndofV, & 
-!      &                       numLadosReserv,1,nlvectV,iprtin)
       keyword_name = "valores_cond_contorno_veloc"
       if (nlvectV.gt.0) call leituraValoresCondContornoDS(keyword_name,fVeloc,ndofV,numLadosReserv,1,nlvectV,iprtin)
 !
 !.... INPUT GEOMECHANIC DIRICHLET CONDITION DATA AND ESTABLISH EQUATION NUMBERS
-! !
-!       if(nlvectD.gt.0) call ReadNeumann4GeoMechanic(fDesloc,ndofD, & 
-!      &                      numnp,0,nlvectD,IIN,iprtin)
+!
       keyword_name = "valores_cond_contorno_desloc"
       if(geomech==1.and.nlvectD.gt.0) then
          call leituraValoresCondContornoDS(keyword_name, fDesloc, ndofD, numnp, 1_4, nlvectD, iprtin)
@@ -564,10 +554,7 @@ end program reservoirSimulator
       REAL(8), external :: DESPRESSURIZAR_INIT
       REAL(8), DIMENSION(numelReserv)      :: SIGMAK
       REAL(8), DIMENSION(1,numLadosReserv) :: VELOCITYL
-!     
-      ttv = 0.d00
-      ttp = 0.d00
-      tts = 0.d00
+
 !
 !.... imprime condicoes iniciais
 ! 
@@ -683,8 +670,8 @@ end program reservoirSimulator
 !.... .. ...
          CALL GEOMECHANIC('UPDAT_MASS_CONTENT')
 !...
-         GEOMECH = 0 
          call transport(velocLadal)
+     
          ERRSZVEL = VELNORM(velocLadal,VELOCITYL,numLadosReserv)
          IF (INDEXL.EQ.1) THEN 
               ERRVEL0 = ERRSZVEL
@@ -735,14 +722,26 @@ end program reservoirSimulator
          IF(NUMDX.GT.0) CALL PRINT_DXINFO('CLOSE_FEDX_FILE',IFEDX, & 
      &                                     NUMNP,NUMNP)
       END IF
+      
+      tempoTotalVelocidade=tempoMontagemVel+tempoSolverVel
+      tempoTotalGeomecanica=tempoMontagemGeo+tempoSolverGeo
 !
-      write(*,*) "Tempo total da velocidade=", ttv
-      write(*,*) "      Montagem velocidade=", tmVel
-      write(*,*) "Tempo total da pressao   =", ttp
-      write(*,*) "Tempo total da saturacao =", tts
-
-      print*, " "
-      print*, "TEMPO TOTAL DE EXECUCAO=", ttv+ttp+tts
+      write(*,*) " "
+      write(*,*) "**********************************************"
+      write(*,*) "Tempo total da velocidade=", tempoTotalVelocidade
+      write(*,*) "      Montagem velocidade=", tempoMontagemVel
+      write(*,*) "      Solver velocidade=", tempoSolverVel
+      write(*,*) "**********************************************"
+      write(*,*) "Tempo total da pressao   =", tempoTotalPressao
+      write(*,*) "**********************************************"
+      write(*,*) "Tempo total do transporte =", tempoTotalTransporte
+      write(*,*) "**********************************************"
+      write(*,*) "Tempo total da geomecanica=", tempoTotalGeomecanica
+      write(*,*) "      Montagem geomecanica=", tempoMontagemGeo
+      write(*,*) "      Solver geomecanica=", tempoSolverGeo
+      write(*,*) "**********************************************"
+      write(*,*) "TEMPO TOTAL DE EXECUCAO=", &
+          tempoTotalVelocidade+tempoTotalPressao+tempoTotalTransporte+tempoTotalGeomecanica
 
       return
 
@@ -847,10 +846,7 @@ end program reservoirSimulator
 !     
       LJUMP = .FALSE.
 !
-      ttv = 0.d00
-      ttp = 0.d00
-      tts = 0.d00
-! 
+
 !.... imprime condicoes iniciais
 ! 
       call imprimirCondicoesIniciais(pressaoElem, velocLadal, phi, & 
@@ -974,9 +970,6 @@ end program reservoirSimulator
 !.... .. ...
          call GEOMECHANIC('UPDAT_MASS_CONTENT')
 !...
-         call timing(t1) 
-!...
-         GEOMECH = 0 
          call transport(velocLadal)
          ERRSZVEL = VELNORM(velocLadal,VELOCITYL,numLadosReserv)
          IF (INDEXL.EQ.1) THEN 
@@ -1007,11 +1000,6 @@ end program reservoirSimulator
          endif
       endif
 
-      call timing(t2)
-#ifdef mostrarTempos
-      write(*,'(2(a,f10.5))') 'tempo de parede, transport_ =', t2 - t1
-#endif
-      tts=tts+(t2-t1)
 !
 !.... imprime solucao intermediaria no tempo
 ! 
@@ -1035,6 +1023,28 @@ end program reservoirSimulator
          IF(NUMDX.GT.0) CALL PRINT_DXINFO('CLOSE_FEDX_FILE',IFEDX, & 
      &                                    NUMNP,NUMNP)
       END IF
+
+      
+      tempoTotalVelocidade=tempoMontagemVel+tempoSolverVel
+      tempoTotalGeomecanica=tempoMontagemGeo+tempoSolverGeo
+!
+      write(*,*) " "
+      write(*,*) "**********************************************"
+      write(*,*) "Tempo total da velocidade=", tempoTotalVelocidade
+      write(*,*) "      Montagem velocidade=", tempoMontagemVel
+      write(*,*) "      Solver velocidade=", tempoSolverVel
+      write(*,*) "**********************************************"
+      write(*,*) "Tempo total da pressao   =", tempoTotalPressao
+      write(*,*) "**********************************************"
+      write(*,*) "Tempo total do transporte=", tempoTotalTransporte
+      write(*,*) "**********************************************"
+      write(*,*) "Tempo total da geomecanica=", tempoTotalGeomecanica
+      write(*,*) "      Montagem geomecanica=", tempoMontagemGeo
+      write(*,*) "      Solver geomecanica=", tempoSolverGeo
+      write(*,*) "**********************************************"
+      write(*,*) "TEMPO TOTAL DE EXECUCAO=", &
+          tempoTotalVelocidade+tempoTotalPressao+tempoTotalTransporte+tempoTotalGeomecanica
+
 !
 1000  FORMAT(/,'###########################################',/, &
                '###########################################',/, &
@@ -1048,13 +1058,6 @@ end program reservoirSimulator
 3000  FORMAT(/'PROPORTIONAL ERROR OF ',A5,' ON ITERATION ',I2,X,'IS ',1PE15.8/)
 5000  FORMAT('     RESIDUAL/RMAX = ',1PE15.8//)
 
-      write(*,*) "Tempo total da velocidade=", ttv
-      write(*,*) "      Montagem velocidade=", tmVel
-      write(*,*) "Tempo total da pressao   =", ttp
-      write(*,*) "Tempo total da saturacao =", tts
-
-      print*, " "
-      print*, "TEMPO TOTAL DE EXECUCAO=", ttv+ttp+tts+ttgeo
 
       return
     end subroutine processamento_creep
@@ -1065,9 +1068,10 @@ end program reservoirSimulator
 !
       use mGlobaisEscalares, only: YEARINJ
 !
-      REAL*8  :: X, TIMELOAD, REALTIME
+      REAL*8  :: X, TIMELOAD, REALTIME, TOL
 !
-      IF (REALTIME.LT.YEARINJ) THEN 
+      TOL = 1e-6
+      IF (REALTIME-YEARINJ.LE.TOL) THEN 
                  X = 0.0D0
          ELSE
                  X = 1.0D0
@@ -1122,7 +1126,7 @@ end program reservoirSimulator
 !
 !**** new *******************************************************************
 !
-      subroutine geoMechanic(fase)
+      subroutine GEOMECHANIC(fase)
       use mGeomecanica
       use mHidrodinamicaRT,  only: pressaoElemAnt, pressaoElem
       use mAlgMatricial,     only: idDesloc, LOAD, FTOD, btod
@@ -1139,6 +1143,7 @@ end program reservoirSimulator
       use mGlobaisEscalares, only: ndofD, nlvectD, ndofV
       use mGlobaisEscalares, only: nnp, nrowsh
       use mGlobaisEscalares, only: optSolver, simetriaGeo
+      use mGlobaisEscalares, only: tempoMontagemGeo, tempoSolverGeo
       use mTransporte,       only: satElemAnt, satElem
       use mSolverPardiso,    only: ApGeo, AiGeo
       use mSolverPardiso,    only: solverPardisoEsparso
@@ -1179,13 +1184,15 @@ end program reservoirSimulator
 !
 200   CONTINUE     !....   fase=='ELASTIC_BBAR_MATRX'
 !
+      call timing(t1)
       call montarSistEqAlgGEO('bbarmatrix_elast',satElem)
+      call timing(t2)
+#ifdef mostrarTempos
+      write(*,9002) t2-t1 
+#endif
+     tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
 
-      
-          write(*,*) " 1 valores nos extremos do vetor BRHS  "
-          write(*,'(6e16.8)') brhsD(1    :6)
-          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
-      
+      call timing(t1)
       if(optSolver=='hypre') then
 
          call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
@@ -1224,28 +1231,31 @@ end program reservoirSimulator
         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'back')
       endif
 !
-!
       if (optSolver=='skyline') then
          write(*,'(a)') '   //========> solver direto SKYLINE, GEOMECHANICS'
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'fact')
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
       end if
-
-          write(*,*) " 1 valores nos extremos do vetor solucao,  "
-          write(*,'(6e16.8)') brhsD(1    :6)
-          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 ! 
-      RETURN
+      call timing(t2)
+#ifdef mostrarTempos
+      write(*,9003) t2-t1 
+#endif
+     tempoSolverGeo=tempoSolverGeo+(t2-t1)
+     
+      RETURN      
 !
 300   CONTINUE     !....  fase=='RIGHT_SIDE_2_SOLVE'
 !
-
+      call timing(t1)
       CALL montarSistEqAlgGEO('right_hand_elast',satElem)
+      call timing(t2)
+#ifdef mostrarTempos
+      write(*,9002) t2-t1 
+#endif
+     tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
 
-          write(*,*) " 2 valores nos extremos do vetor BRHS  "
-          write(*,'(6e16.8)') brhsD(1    :6)
-          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
-      
+      call timing(t1)
       if(optSolver=='hypre') then
 
 !         call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
@@ -1283,20 +1293,31 @@ end program reservoirSimulator
          write(*,'(a)') '   //========> solver direto SKYLINE, GEOMECHANICS'
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
       end if
-
-          write(*,*) " 2 valores nos extremos do vetor solucao,  "
-          write(*,'(6e16.8)') brhsD(1    :6)
-          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 !
 !.... UPDATE DISPLACEMENT 
 ! 
       CALL BTOD(idDesloc,DIS,BRHSD,NDOFD,NUMNP)
+      
+      call timing(t2)
+#ifdef mostrarTempos
+      write(*,9003) t2-t1 
+#endif
+     tempoSolverGeo=tempoSolverGeo+(t2-t1)
 !
       RETURN
 !
 400   CONTINUE     !.... fase=='GEOMECHANICS_CREEP'
 !
+      call timing(t1)
       call montarSistEqAlgGEO('bbarmatrix_creep',satElem)
+      call timing(t2)
+#ifdef mostrarTempos
+      write(*,9002) t2-t1 
+#endif
+     tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
+
+!
+      call timing(t1)
 !
 !.... COMPUTE RESIDUAL EUCLIDEAN NORM
 !
@@ -1305,10 +1326,6 @@ end program reservoirSimulator
       RESMAX = DMAX1(RESIDUAL,RESMAX)
 !     
       WRITE(*,4000) RESIDUAL,resmax
-
-          write(*,*) " 3 valores nos extremos do vetor BRHS  "
-          write(*,'(6e16.8)') brhsD(1    :6)
-          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 
       if(optSolver=='hypre') then
 
@@ -1322,9 +1339,8 @@ end program reservoirSimulator
          precond_id_G = 1
          tol = 1.0e-08
          call resolverSistemaAlgHYPRE (A_HYPRE_G, parcsr_A_G, b_HYPRE_G, par_b_G, u_HYPRE_G, par_u_G, &
-                                   solver_G, solver_id_G, precond_id_G, tol,    &
-                                   num_iterations, final_res_norm, initialGuess_G, brhsD, rows_G, neqD, myid, mpi_comm)
-                                   
+                                   solver_G, solver_id_G, precond_id_G, tol, num_iterations,          &
+                                   final_res_norm, initialGuess_G, brhsD, rows_G, neqD, myid, mpi_comm)
                                    
          call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
          initialGuess_G=brhsD
@@ -1344,10 +1360,13 @@ end program reservoirSimulator
 !          call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'full')
       end if
+      
+      call timing(t2)
+#ifdef mostrarTempos
+      write(*,9003) t2-t1 
+#endif
+     tempoSolverGeo=tempoSolverGeo+(t2-t1)
 
-          write(*,*) " 3 valores nos extremos do vetor solucao,  "
-          write(*,'(6e16.8)') brhsD(1    :6)
-          write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 !
 !.... UPDATE TRIAL DISPLACEMENT WITH INCREMENT 
 !
@@ -1388,7 +1407,13 @@ end program reservoirSimulator
 !
 700   CONTINUE     !....  fase=='RESETS_FORCE_VECTR'
 !
+      call timing(t1)
       CALL montarSistEqAlgGEO('right_hand_reset',satElem)
+      call timing(t2)
+#ifdef mostrarTempos
+      write(*,9002) t2-t1 
+#endif
+     tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
 !
       RETURN
 !
@@ -1409,6 +1434,8 @@ end program reservoirSimulator
       RETURN
 !
  4000 FORMAT(3X,'RESIDUAL = ',1PE15.8,2X,'RMAX =',1PE15.8)
+ 9002 FORMAT( "Tempo de montagem da matriz e/ou vetor força = ",f12.5)
+ 9003 FORMAT( "Tempo do solver da geomecanica = ",f12.5)
 !
       END SUBROUTINE
 !
@@ -1725,10 +1752,6 @@ end program reservoirSimulator
 !
 !..Bbar.. END
 !
-      tmGeo=0.0
-      tmVel=0.0
-      tsGeo=0.0
-!
       if (nicode.eq.0) nicode=nen
       npint   = nicode 
 !
@@ -1920,14 +1943,7 @@ end program reservoirSimulator
          call criarVetor_HYPRE     (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
 
      endif 
-      
-      
-      
-      
-      
-      
-      
-      
+     
 !
       return
 !

@@ -495,7 +495,7 @@
 !
       INTEGER :: IFILE, IREGION
 ! 
-      CHARACTER(LEN=6)  :: TEXT
+      CHARACTER*6 :: TEXT
       CHARACTER*18, DIMENSION(6) :: REGION 
 !
       real(8) :: YOUNG, POISSON, GRBULK, MEANWATER, MEANOIL, SATURA
@@ -573,7 +573,7 @@
       ENDIF
 !
       keyword_name = "stress-strain_relation_"//trim(REGION(IREGION))
-      call readStringKeywordValue(keyword_name, TEXT, len(trim(TEXT)), ierr)
+      call readStringKeywordValue(keyword_name, TEXT, 5, ierr)
 
       IF (TRIM(TEXT(1:5)).EQ.'CREEP') THEN 
             SALTCREEP = .TRUE.

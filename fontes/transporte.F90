@@ -30,7 +30,8 @@
       use mPropGeoFisica,    only: dimx,dimy,dimz,nelx,nely,nelz, sinj
       use mMalha,            only: x, nsd, numnp, numnpReserv, numel, numelReserv, nen, numLadosElem
       use mMalha,            only: conecLadaisElem, conecNodaisElem, local, listaDosElemsPorFace
-      use mGlobaisEscalares, only: ndofV, tTransporte,dtBlocoTransp,geomech,nnp, SPLITT
+      use mGlobaisEscalares, only: ndofV, tTransporte,dtBlocoTransp,nnp, SPLITT
+      use mGlobaisEscalares, only: tempoTotalTransporte
       use mPropGeoFisica,    only: iflag_prod, tprt_prod,np_rand_prod, dtprt_prod
       use mGlobaisArranjos,  only: grav
       use mPropGeoFisica,    only: gf1, gf2, gf3
@@ -46,8 +47,12 @@
       integer :: nt,nprt,i
       real(8) :: cr,crf
       real(8) :: dt,vxmax,vymax,vzmax,vmax,pi
+      
+      real*8 :: t1,t2
 !
-       print*, "calculando o TRANSPORTE:"
+      call timing(t1)
+!
+      print*, "calculando o TRANSPORTE:"
 
       allocate(uf (numelReserv)); uf = 0.0d0
       ntime=0
@@ -59,8 +64,6 @@
 !
 !.... courant prescrito
 !     
-!      cr=0.125d0/1.d0
-!      if(geomech==1)cr=0.45d0 
       cr = 0.125D0      
 !     
 !.... verificando a maior velocidade
@@ -114,6 +117,12 @@
 !      end if
       tprt_prod=tprt_prod+dtprt_prod
       np_rand_prod = 0
+      
+      call timing(t2)
+#ifdef mostrarTempos
+      write(*,*) "Tempo para calculo do transporte=", t2-t1 
+#endif
+         tempoTotalTransporte=tempoTotalTransporte+(t2-t1)
 !
       end subroutine transport
 !
@@ -121,7 +130,7 @@
 !  
       subroutine maxder(nf,ndof,numel,dxmax,dymax,dzmax,dmax,phi,perm,v)
 !
-      use mGlobaisEscalares, only: NDOFD, geomech
+      use mGlobaisEscalares, only: NDOFD
       use mMalha, only: conecLadaisElem,conecNodaisElem, nsd, local, numnp,nen, numLadosElem
 !
       implicit none     
@@ -257,7 +266,7 @@
            conecLadaisElem,listaDosElemsPorFace,dt,uf,&
            v,numLadosElem)
 !     
-        use mGlobaisEscalares, only: nRK, ordemRK, ndofV,ns,nvel,tTransporte,tempoNucTrans, ndofD, geomech, nnp	
+        use mGlobaisEscalares, only: nRK, ordemRK, ndofV,ns,nvel,tTransporte,tempoNucTrans, ndofD, nnp
         use mGlobaisArranjos,  only: uTempoN, mat, c
         use mLeituraEscrita,   only: prt,escreverArqParaviewIntermed,nprint,qtdImpSat
         use mLeituraEscrita,   only: isatTransiente,paraview_escalarPorElementoTransiente
@@ -401,7 +410,7 @@
            conecLadaisElem,listaDosElemsPorFace,dt,uf,&
            v,numLadosElem)
 !     
-        use mGlobaisEscalares, only: nRK, ordemRK, ndofV,ns,nvel,tTransporte,tempoNucTrans, ndofD, geomech, nnp	
+        use mGlobaisEscalares, only: nRK, ordemRK, ndofV,ns,nvel,tTransporte,tempoNucTrans, ndofD, nnp
         use mGlobaisArranjos,  only: uTempoN, mat, c
         use mLeituraEscrita,   only: prt,escreverArqParaviewIntermed,nprint,qtdImpSat
         use mLeituraEscrita,   only: isatTransiente,paraview_escalarPorElementoTransiente
@@ -573,7 +582,6 @@
      &     uf,du,phi,v,numLadosElem,permx,permy,permz,inicio,fim)
 !
       use mPropGeoFisica,    only: nelx, nely, nelz
-      use mGlobaisEscalares, only: geomech
 !
       implicit none
 !     
@@ -797,29 +805,9 @@
          end if
          end do
        
-       IF(GEOMECH==1) THEN
-!  
-!....LOCALIZE SOLID'S NODAL VELOCITIES ON ELEMENT
-!
-       CALL LOCAL(conecNodaisElem(1,NEL),VDP,VDPL,NEN,NDOFD,NED2) 
-!
-!.... FROM LOCAL DISPLACEMENT VELOCITIES (VDPL[NDOFD,NEN]) 
-!....  TO  LOCAL EDGES DISPLACEMENT VELOCITIES (VDPEDG[EDGE])
-!....    
-!
-       VDPEDG(1)=(VDPL(1,1)+VDPL(1,2))*0.5D0
-       VDPEDG(2)=(VDPL(2,2)+VDPL(2,3))*0.5D0
-       VDPEDG(3)=(VDPL(1,3)+VDPL(1,4))*0.5D0
-       VDPEDG(4)=(VDPL(2,4)+VDPL(2,1))*0.5D0
-
-
-       ENDIF
-
        end subroutine
 
        END SUBROUTINE
-
-
 !     
 !=======================================================================
 !     
@@ -829,7 +817,6 @@
 !     
       use mMalha,         only: x, xc, nsd
       use mPropGeoFisica, only: hx, hy, hz, dimx, dimy, dimz, sinj
-      use mGlobaisEscalares, only: geomech
 !
       implicit none
 !
@@ -860,8 +847,6 @@
 !     injecao continua no bordo direito
 !
       if(xx.gt.(dimx-hx)) uf(nel)=sinj
-
-      if(geomech==0) then
 !
 !     injecao continua no bordo frente
 !
@@ -883,7 +868,6 @@
 !     
       endif
 !
-      end if!geomech
 !
       end do
 !
@@ -1064,7 +1048,7 @@
 !     
 !     KT DxD na fronteira do dominio
 !
-        use mGlobaisEscalares, only : nRK, ordemRK, nnp, GEOMECH
+        use mGlobaisEscalares, only : nRK, ordemRK, nnp
         use mMalha, only: numLadosElem, nsd
 !
         implicit none
@@ -1083,59 +1067,15 @@
 !      
 !     calcula as derivadas dos fluxos para a construcao da malha auxiliar
 !     
-
-        IF(GEOMECH==1) THEN
-!     
-!     elemento
-           de1=DFGEO(uel(1),vel(1),xk,VDPEDG(1),P(1))/pc
-           de2=DGGEO(uel(2),vel(2),yk,VDPEDG(2),P(2))/pc
-           de3=DFGEO(uel(3),vel(3),xk,VDPEDG(3),P(3))/pc
-           de4=DGGEO(uel(4),vel(4),yk,VDPEDG(4),P(4))/pc
-           if(nsd==3) then
-              de5=DFGEO(uel(5),vel(5),xk,VDPEDG(5),P(5))/pc
-              de6=DGGEO(uel(6),vel(6),yk,VDPEDG(6),P(6))/pc
-           endif
-!     
-!     vizinhos
+        a1=xmax_speed(uel(1),unb(1),vel(1),xk,xkb(1),pc,p(1))
+        a2=ymax_speed(uel(2),unb(2),vel(2),yk,xkb(2),pc,p(2))
+        a3=xmax_speed(uel(3),unb(3),vel(3),xk,xkb(3),pc,p(3))
+        a4=ymax_speed(uel(4),unb(4),vel(4),yk,xkb(4),pc,p(4))
+        if(nsd==3) then
+           a5=zmax_speed(uel(5),unb(5),vel(5),zk,xkb(5),pc,p(5))
+           a6=zmax_speed(uel(6),unb(6),vel(6),zk,xkb(6),pc,p(6))
+        endif
 !
-           dn1=DFGEO(unb(1),vel(1),xkb(1),VDPEDG(1),P(1))/p(1)
-           dn2=DGGEO(unb(2),vel(2),xkb(2),VDPEDG(2),P(2))/p(2)
-           dn3=DFGEO(unb(3),vel(3),xkb(3),VDPEDG(3),P(3))/p(3)
-           dn4=DGGEO(unb(4),vel(4),xkb(4),VDPEDG(4),P(4))/p(4)
-           if(nsd==3) then
-              dn5=DFGEO(unb(5),vel(5),xkb(5),VDPEDG(5),P(5))/p(5)
-              dn6=DGGEO(unb(6),vel(6),xkb(6),VDPEDG(6),P(6))/p(6)
-           endif
-!     
-           a1=max(dabs(de1),dabs(dn1))
-           a2=max(dabs(de2),dabs(dn2))
-           a3=max(dabs(de3),dabs(dn3))
-           a4=max(dabs(de4),dabs(dn4))
-           if(nsd==3) then
-              a5=max(dabs(de5),dabs(dn5))
-              a6=max(dabs(de6),dabs(dn6))
-           endif
-
-           if(nnp.eq.1.and.ns.eq.1) then
-              eps=1.d-3
-!
-              if((dabs(vel(1))+DABS(VDPEDG(1))).gt.EPS) A1=HX/dt/4.d0
-              if((dabs(vel(2))+DABS(VDPEDG(2))).gt.EPS) A2=HX/dt/4.d0
-              if((dabs(vel(3))+DABS(VDPEDG(3))).gt.EPS) A3=HY/dt/4.d0
-              if((dabs(vel(4))+DABS(VDPEDG(4))).gt.EPS) A4=HY/dt/4.d0
-           end if
-        ELSE
-           a1=xmax_speed(uel(1),unb(1),vel(1),xk,xkb(1),pc,p(1))
-           a2=ymax_speed(uel(2),unb(2),vel(2),yk,xkb(2),pc,p(2))
-           a3=xmax_speed(uel(3),unb(3),vel(3),xk,xkb(3),pc,p(3))
-           a4=ymax_speed(uel(4),unb(4),vel(4),yk,xkb(4),pc,p(4))
-           if(nsd==3) then
-              a5=zmax_speed(uel(5),unb(5),vel(5),zk,xkb(5),pc,p(5))
-              a6=zmax_speed(uel(6),unb(6),vel(6),zk,xkb(6),pc,p(6))
-           endif
-        ENDIF
-
-
 !      if(nnp.eq.1 .and. ns.eq.1) then
 !      eps=1.d-3
 !      if(dabs(vel(1)).gt.eps) a1=hx/dt/8.d0
@@ -1317,126 +1257,109 @@
 
       contains
 
-         subroutine vizinhanca(fluxo,uel,vel,unb,xkb,p,pc,numLadosElem)
+        subroutine vizinhanca(fluxo,uel,vel,unb,xkb,p,pc,numLadosElem)
 !
-         use mGlobaisEscalares, only: NDOFD, GEOMECH
-         use mGeomecanica,      only: VDP, NED2
-         use mMalha,            only: local, numelReserv
+          use mGlobaisEscalares, only: NDOFD
+          use mGeomecanica,      only: VDP, NED2
+          use mMalha,            only: local, numelReserv
 !
-         implicit none
+          implicit none
+!
+          integer :: numLadosElem, no1, no3, no7, posDer, i
+          real(8) :: fluxo(2,numLadosElem),pc
+          real(8), dimension(numLadosElem) :: uel,vel,unb,xkb, p
+          REAL(8), DIMENSION(NED2,NEN) :: VDPL
  
-         integer :: numLadosElem, no1, no3, no7, posDer, i
-         real(8) :: fluxo(2,numLadosElem),pc
-         real(8), dimension(numLadosElem) :: uel,vel,unb,xkb, p
-         REAL(8), DIMENSION(NED2,NEN) :: VDPL
- 
-         n(1)= listaDosElemsPorFace(2,conecLadaisElem(4,nel))
-         n(2)= listaDosElemsPorFace(3,conecLadaisElem(1,nel))
-         n(3)= listaDosElemsPorFace(4,conecLadaisElem(2,nel))
-         n(4)= listaDosElemsPorFace(1,conecLadaisElem(3,nel))
-         if(nsd==3)n(5)= listaDosElemsPorFace(5,conecLadaisElem(5,nel))
-         if(nsd==3)n(6)= listaDosElemsPorFace(6,conecLadaisElem(6,nel))
+          n(1)= listaDosElemsPorFace(2,conecLadaisElem(4,nel))
+          n(2)= listaDosElemsPorFace(3,conecLadaisElem(1,nel))
+          n(3)= listaDosElemsPorFace(4,conecLadaisElem(2,nel))
+          n(4)= listaDosElemsPorFace(1,conecLadaisElem(3,nel))
+          if(nsd==3)n(5)= listaDosElemsPorFace(5,conecLadaisElem(5,nel))
+          if(nsd==3)n(6)= listaDosElemsPorFace(6,conecLadaisElem(6,nel))
 
-         if(n(1)==0) n(1)=nel
-         if(n(2)==0) n(2)=nel
-         if(n(3)==0) n(3)=nel
-         if(n(4)==0) n(4)=nel
-         if(nsd==3) then
-            if(n(5)==0) n(5)=nel !z
-            if(n(6)==0) n(6)=nel !z
-         endif
+          if(n(1)==0) n(1)=nel
+          if(n(2)==0) n(2)=nel
+          if(n(3)==0) n(3)=nel
+          if(n(4)==0) n(4)=nel
+          if(nsd==3) then
+             if(n(5)==0) n(5)=nel !z
+             if(n(6)==0) n(6)=nel !z
+          endif
 !
 !     porosidade nos elementos vizinhos
 !         
-         pc  =phi(nel)
-         p(1)=phi(n(1))
-         p(2)=phi(n(2))
-         p(3)=phi(n(3))
-         p(4)=phi(n(4))
-         if(nsd==3) then
-            p(5)=phi(n(5)) !z
-            p(6)=phi(n(6)) !z
-         endif
+          pc  =phi(nel)
+          p(1)=phi(n(1))
+          p(2)=phi(n(2))
+          p(3)=phi(n(3))
+          p(4)=phi(n(4))
+          if(nsd==3) then
+             p(5)=phi(n(5)) !z
+             p(6)=phi(n(6)) !z
+          endif
 !
 !     permeabilidades
 !
-         xk    =permx(nel)
-         yk    =permy(nel)
-         if(nsd==3) zk    =permz(nel)
+          xk    =permx(nel)
+          yk    =permy(nel)
+          if(nsd==3) zk    =permz(nel)
 
-         xkb(1)=permx(n(1))
-         xkb(2)=permy(n(2))
-         xkb(3)=permx(n(3))
-         xkb(4)=permy(n(4))
-         if(nsd==3) then
-            xkb(5)=permz(n(5)) !z
-            xkb(6)=permz(n(6)) !z
-         endif
+          xkb(1)=permx(n(1))
+          xkb(2)=permy(n(2))
+          xkb(3)=permx(n(3))
+          xkb(4)=permy(n(4))
+          if(nsd==3) then
+             xkb(5)=permz(n(5)) !z
+             xkb(6)=permz(n(6)) !z
+          endif
 !     
 !     solucao no elemento
 !     
-         uc=satElem(nel)
+          uc=satElem(nel)
 !     
 !     solucoes nos lados: reconstrucao linear
 !     
-         uel(1)=uc-du(1,nel)/2.d0
-         uel(2)=uc-du(2,nel)/2.d0
-         uel(3)=uc+du(1,nel)/2.d0
-         uel(4)=uc+du(2,nel)/2.d0
-         if(nsd==3) then
-            uel(5)=uc-du(3,nel)/2.d0 !z
-            uel(6)=uc+du(3,nel)/2.d0 !z
-         endif
+          uel(1)=uc-du(1,nel)/2.d0
+          uel(2)=uc-du(2,nel)/2.d0
+          uel(3)=uc+du(1,nel)/2.d0
+          uel(4)=uc+du(2,nel)/2.d0
+          if(nsd==3) then
+             uel(5)=uc-du(3,nel)/2.d0 !z
+             uel(6)=uc+du(3,nel)/2.d0 !z
+          endif
 !     
 !     velocidades nos lados do elemento
 !     
-         vel(1)=v(1,conecLadaisElem(4,nel))
-         vel(2)=v(1,conecLadaisElem(1,nel))
-         vel(3)=v(1,conecLadaisElem(2,nel))
-         vel(4)=v(1,conecLadaisElem(3,nel))
-         if(nsd==3) then
-            vel(5)=v(1,conecLadaisElem(5,nel)) !z
-            vel(6)=v(1,conecLadaisElem(6,nel)) !z
-         endif
+          vel(1)=v(1,conecLadaisElem(4,nel))
+          vel(2)=v(1,conecLadaisElem(1,nel))
+          vel(3)=v(1,conecLadaisElem(2,nel))
+          vel(4)=v(1,conecLadaisElem(3,nel))
+          if(nsd==3) then
+             vel(5)=v(1,conecLadaisElem(5,nel)) !z
+             vel(6)=v(1,conecLadaisElem(6,nel)) !z
+          endif
 !     
 !     solucoes nos elementos vizinhos: reconstrucao linear
 !
-         do k=1, numLadosELem
+          do k=1, numLadosELem
 
-         if(n(k)==0)then
-            unb(k)=uel(k)
-         else
-            if(k==1.or.k==3)posDer=1
-            if(k==2.or.k==4)posDer=2
-            if(k==5.or.k==6)posDer=3
+             if(n(k)==0)then
+                unb(k)=uel(k)
+             else
+                if(k==1.or.k==3)posDer=1
+                if(k==2.or.k==4)posDer=2
+                if(k==5.or.k==6)posDer=3
+                
+                if(k==1.or.k==2.or.k==5) then
+                   unb(k)=satElem(n(k))+du(posDer,n(k))/2.d0
+                else
+                   unb(k)=satElem(n(k))-du(posDer,n(k))/2.d0
+                end if
 
-            if(k==1.or.k==2.or.k==5) then
-               unb(k)=satElem(n(k))+du(posDer,n(k))/2.d0
-            else
-               unb(k)=satElem(n(k))-du(posDer,n(k))/2.d0
-            end if
+             end if
+          end do
 
-         end if
-         end do
-
-         IF(GEOMECH==1) THEN
-!  
-!....LOCALIZE SOLID'S NODAL VELOCITIES ON ELEMENT
-!
-            CALL LOCAL(conecNodaisElem(1,NEL),VDP,VDPL,NEN,NDOFD,NED2) 
-!
-!.... FROM LOCAL DISPLACEMENT VELOCITIES (VDPL[NDOFD,NEN]) 
-!....  TO  LOCAL EDGES DISPLACEMENT VELOCITIES (VDPEDG[EDGE])
-!....    
-!
-            VDPEDG(1)=(VDPL(1,1)+VDPL(1,2))*0.5D0
-            VDPEDG(2)=(VDPL(2,2)+VDPL(2,3))*0.5D0
-            VDPEDG(3)=(VDPL(1,3)+VDPL(1,4))*0.5D0
-            VDPEDG(4)=(VDPL(2,4)+VDPL(2,1))*0.5D0
-
-         ENDIF
-
-       end subroutine
+       end subroutine vizinhanca
       !
       !=======================================================================
       !  
@@ -1550,7 +1473,7 @@
 !     
 !     KT DxD na fronteira do dominio
 
-      use mGlobaisEscalares, only: nnp, ns, GEOMECH
+      use mGlobaisEscalares, only: nnp, ns
       use mMalha, only: nsd
 !
       implicit none
@@ -1567,40 +1490,7 @@
 !      
 !     
 !     calcula as derivadas dos fluxos para a construcao da malha auxiliar
-
-      IF(GEOMECH==1) THEN
-!     
-!     elemento
-      de1=DFGEO(uel(1),vel(1),xk,VDPEDG(1),P(1))/pc
-      de2=DGGEO(uel(2),vel(2),yk,VDPEDG(2),P(2))/pc
-      de3=DFGEO(uel(3),vel(3),xk,VDPEDG(3),P(3))/pc
-      de4=DGGEO(uel(4),vel(4),yk,VDPEDG(4),P(4))/pc
-      if(nsd==3) then
-         de5=DFGEO(uel(5),vel(5),xk,VDPEDG(5),P(5))/pc
-         de6=DGGEO(uel(6),vel(6),yk,VDPEDG(6),P(6))/pc
-      endif
-!     
-!     vizinhos
-      dn1=DFGEO(unb(1),vel(1),xkb(1),VDPEDG(1),P(1))/p(1)
-      dn2=DGGEO(unb(2),vel(2),xkb(2),VDPEDG(2),P(2))/p(2)
-      dn3=DFGEO(unb(3),vel(3),xkb(3),VDPEDG(3),P(3))/p(3)
-      dn4=DGGEO(unb(4),vel(4),xkb(4),VDPEDG(4),P(4))/p(4)
-      if(nsd==3) then
-         dn5=DFGEO(unb(5),vel(5),xkb(5),VDPEDG(5),P(5))/p(5)
-         dn6=DGGEO(unb(6),vel(6),xkb(6),VDPEDG(6),P(6))/p(6)
-      endif
-!     
-      a1=max(dabs(de1),dabs(dn1))
-      a2=max(dabs(de2),dabs(dn2))
-      a3=max(dabs(de3),dabs(dn3))
-      a4=max(dabs(de4),dabs(dn4))
-      if(nsd==3) then
-         a5=max(dabs(de5),dabs(dn5))
-         a6=max(dabs(de6),dabs(dn6))
-      endif
-
-      ELSE
-
+!
       a1=xmax_speed(uel(1),unb(1),vel(1),xk,xkb(1),pc,p(1))
       a2=ymax_speed(uel(2),unb(2),vel(2),yk,xkb(2),pc,p(2))
       a3=xmax_speed(uel(3),unb(3),vel(3),xk,xkb(3),pc,p(3))
@@ -1609,9 +1499,6 @@
          a5=zmax_speed(uel(5),unb(5),vel(5),zk,xkb(5),pc,p(5))
          a6=zmax_speed(uel(6),unb(6),vel(6),zk,xkb(6),pc,p(6))
       endif
-
-      ENDIF
-
 !      
       if(nnp.eq.1.and.ns.eq.1) then
       eps=1.d-3
@@ -1995,7 +1882,6 @@
 !      
 !       calcula f em um no ou volume
 !  
-       use mGlobaisEscalares, only: geomech
        use mPropGeoFisica, only: xlw,xlo,xlt,gf1,rhoo,rhow
 
 !      
@@ -2040,8 +1926,6 @@
 !...... fluxo
 !  
        f=fw*vv-xemp
-!        f=-xemp
-!       if(geomech==1) F = UU*POROSITY*VDISPX + F
 !  
        end function
 !      
@@ -2051,7 +1935,6 @@
 !       
 !       calcula f em um no ou volume
 !  
-       use mGlobaisEscalares, only: geomech
        use mPropGeoFisica, only: xlw,xlo,xlt,gf2,rhoo,rhow
 !       
        implicit none
@@ -2093,9 +1976,6 @@
 !       fluxo
 !  
        g=fw*vv-xemp
-!        g=-xemp
-!  
-!       if(geomech==1) G = UU*POROSITY*VDISPY + G
 
        end function
 !      
@@ -2105,7 +1985,6 @@
 !       
 !       calcula f em um no ou volume
 !  
-       use mGlobaisEscalares, only: geomech
        use mPropGeoFisica, only: xlw,xlo,xlt,gf3,rhoo,rhow
 !       
        implicit none
@@ -2151,9 +2030,6 @@
 !       fluxo
 !  
        h=fw*vv-xemp
-!        g=-xemp
-
-!       if(geomech==1) H = UU*POROSITY*VDISPZ + H
 !  
        end function
 !      
@@ -2364,265 +2240,7 @@
        end select
 !  
        end function
-!
-!*** NEW ***** MODIFIED DF0 FUNCTION FOR GEOMECHANIC ****************** 
 !     
-      FUNCTION DFGEO(uu,vv,xk,VDISPX,POROSITY)
-!     
-!     calcula df/du em um no ou volume
-!     
-      use mPropGeoFisica, only: xlw,xltGeo,xlo,gf1,iflag_linear,srw,sro,xmiw,xmio,rhoo,rhow,eps_df
-!
-      implicit none
-      real(8) :: df,uu,vv
-      real(8) :: dfw,dlt,dlo,dlw,dfe
-      real(8) :: uus,zero
-      real(8) :: xg,xk
-!
-      REAL(8) :: DFGEO,VDISPX,POROSITY
-!	
-      ZERO = 0.d0     
-!     
-!.... Buckley-Leverett 
-!     
-!      f=(uu**2)/(uu**2+a*(1-uu)**2)
-!      a=1.d0/2.d0
-!      a1=uu**2+a*(1.d0-uu)**2
-!      df=(2.d0*uu/a1 - uu**2*(2.d0*uu-2.d0*a*(1.d0-uu))/a1**2)*vv
-!     
-!.... Burgers, p. 464 do LeVeque
-!     
-!     a=dsqrt(2.d0)/2.d0 ! 45 graus
-!     
-!     f=a*uu**2/2.d0     
-!     
-!     df=a*uu
-!     
-!.... Agua-Oleo
-!
-      xg = gf1
-      select case(iflag_linear)
-      case(1)
-!
-!     derivada do fluxo
-!
-      DF = VV
-!
-      DFGEO = POROSITY*VDISPX + DF
-!
-      case(2)
-!
-!     derivadas das mobilidades
-!
-      uus=uu-srw
-      if(uus.lt.zero) uus=zero
-      dlw=  2.d0*(uus)/xmiw/(1.d0-srw)**2 
-!  
-      uus=1.d0-sro-uu
-      if(uus.lt.zero) uus=zero 
-      dlo= -2.d0*(uus)/xmio/(1.d0-sro)**2      
-!
-      dlt= dlw+dlo
-!
-!     derivada do fluxo fracionario
-!
-!
-!     derivada do fluxo
-!
-!     derivada do fluxo
-!
-      dfw=dlw/xltGeo(uu) - xlw(uu)*dlt/xltGeo(uu)**2
-      if(dabs(dfw).lt.eps_df) dfw=dsign(1.d0,dfw)*eps_df
-!
-      dfe=(dfw*xlo(uu)+xlw(uu)/xltGeo(uu)*dlo)
-      if(dabs(dfe).lt.eps_df) dfe=dsign(1.d0,dfe)*eps_df
-!
-      df=dfw*vv-(rhoo-rhow)*xg*xk*dfe
-!
-!      df=-(rhoo-rhow)*xg*xk*dfe
-!
-!      if(dabs(df).gt.zer_df.and.dabs(df).lt.eps_df)
-!     &  df=dsign(1.d0,df)*eps_df
-!      if(dabs(df).lt.eps_df) df=dsign(1.d0,df)*eps_df
-!
-      DFGEO = POROSITY*VDISPX + DF
-!
-      end select
-!
-      end function
-!     
-!*** NEW ***** MODIFIED DG0 FUNCTION FOR GEOMECHANIC ****************** 
-!     
-      FUNCTION DGGEO(uu,vv,xk,VDISPY,POROSITY)
-!     
-!     calcula dg/du em um no ou volume
-!     
-      use mPropGeoFisica, only: xlw,xltGeo,xlo,gf2,iflag_linear,srw,sro,xmiw,xmio,rhoo,rhow,eps_df
-!
-      implicit none
-      real(8) :: dg,uu,vv
-      real(8) :: dfw,dlt,dlo,dlw,dfe
-      real(8) :: uus,zero
-      real(8) :: xg,xk
-!
-      REAL(8) :: DGGEO,VDISPY,POROSITY
-!
-      ZERO=0.d0     
-!
-!.... Buckley-Leverett 
-!     
-!     g=(uu**2)/(uu**2+a*(1-uu)**2)
-!      a=1.d0/2.d0
-!      a1=uu**2+a*(1.d0-uu)**2
-!      dg=(2.d0*uu/a1 - uu**2*(2.d0*uu-2.d0*a*(1.d0-uu))/a1**2)*vv
-!     
-!.... Burgers, p. 464 do LeVeque
-!     
-!     a=dsqrt(2.d0)/2.d0 ! 45 graus
-!     
-!     g=a*uu**2/2.d0     
-!     
-!     dg=a*uu
-!
-!.... Agua-Oleo
-!
-      xg=gf2
-!
-      select case(iflag_linear)
-      case(1)
-!
-!     derivada do fluxo
-!
-      dg=vv
-!
-      DGGEO = POROSITY*VDISPY + DG
-!
-      case(2)
-!
-!     derivadas das mobilidades
-!
-      uus=uu-srw
-      if(uus.lt.zero) uus=zero
-      dlw=  2.d0*(uus)/xmiw/(1.d0-srw)**2   
-!
-      uus=1.d0-sro-uu
-      if(uus.lt.zero) uus=zero 
-      dlo= -2.d0*(uus)/xmio/(1.d0-sro)**2  
-!    
-      dlt= dlw+dlo
-!
-!     derivada do fluxo
-!
-      dfw=dlw/xltGeo(uu) - xlw(uu)*dlt/xltGeo(uu)**2
-!
-      dfe=(dfw*xlo(uu)+xlw(uu)/xltGeo(uu)*dlo)
-!
-      dfw=dlw/xltGeo(uu) - xlw(uu)*dlt/xltGeo(uu)**2
-      if(dabs(dfw).lt.eps_df) dfw=dsign(1.d0,dfw)*eps_df
-!
-      dfe=(dfw*xlo(uu)+xlw(uu)/xltGeo(uu)*dlo)
-      if(dabs(dfe).lt.eps_df) dfe=dsign(1.d0,dfe)*eps_df
-
-      dg=dfw*vv-(rhoo-rhow)*xg*xk*dfe
-!
-!      dg=-(rhoo-rhow)*xg*xk*dfe
-!      if(dabs(dg).gt.zer_df.and.dabs(dg).lt.eps_df) 
-!     &   dg=dsign(1.d0,dg)*eps_df
-!
-!      if(dabs(dg).lt.eps_df)  dg=dsign(1.d0,dg)*eps_df
-!
-      DGGEO = POROSITY*VDISPY + DG
-!
-      end select
-!
-      end function
-!     
-!*** NEW ***** MODIFIED DG0 FUNCTION FOR GEOMECHANIC ****************** 
-!     
-      FUNCTION DHGEO(uu,vv,xk,VDISPY,POROSITY)
-!     
-!     calcula dg/du em um no ou volume
-!     
-       use mPropGeoFisica, only: xlw,xltGeo,xlo,gf3,iflag_linear,srw,sro,xmiw,xmio,rhoo,rhow,eps_df
-!
-      implicit none
-      real(8) :: dh,uu,vv
-      real(8) :: dfw,dlt,dlo,dlw,dfe
-      real(8) :: uus,zero
-      real(8) :: xg,xk
-!
-      REAL(8) :: DHGEO,VDISPY,POROSITY
-!
-      ZERO=0.d0     
-!	
-!.... Buckley-Leverett 
-!     
-!     g=(uu**2)/(uu**2+a*(1-uu)**2)
-!      a=1.d0/2.d0
-!      a1=uu**2+a*(1.d0-uu)**2
-!      dg=(2.d0*uu/a1 - uu**2*(2.d0*uu-2.d0*a*(1.d0-uu))/a1**2)*vv
-!     
-!.... Burgers, p. 464 do LeVeque
-!     
-!     a=dsqrt(2.d0)/2.d0 ! 45 graus
-!     
-!     g=a*uu**2/2.d0     
-!     
-!     dg=a*uu
-!
-!.... Agua-Oleo
-!
-      xg=gf3
-!
-      select case(iflag_linear)
-      case(1)
-!
-!     derivada do fluxo
-!
-      dh=vv
-!
-      DHGEO = POROSITY*VDISPY + DH
-!
-      case(2)
-!
-!     derivadas das mobilidades
-!
-      uus=uu-srw
-      if(uus.lt.zero) uus=zero
-      dlw=  2.d0*(uus)/xmiw/(1.d0-srw)**2   
-!
-      uus=1.d0-sro-uu
-      if(uus.lt.zero) uus=zero 
-      dlo= -2.d0*(uus)/xmio/(1.d0-sro)**2  
-!    
-      dlt= dlw+dlo
-!
-!     derivada do fluxo
-!
-      dfw=dlw/xltGeo(uu) - xlw(uu)*dlt/xltGeo(uu)**2
-!
-      dfe=(dfw*xlo(uu)+xlw(uu)/xltGeo(uu)*dlo)
-!
-      dfw=dlw/xltGeo(uu) - xlw(uu)*dlt/xltGeo(uu)**2
-      if(dabs(dfw).lt.eps_df) dfw=dsign(1.d0,dfw)*eps_df
-!
-      dfe=(dfw*xlo(uu)+xlw(uu)/xltGeo(uu)*dlo)
-      if(dabs(dfe).lt.eps_df) dfe=dsign(1.d0,dfe)*eps_df
-
-      dh=dfw*vv-(rhoo-rhow)*xg*xk*dfe
-!
-!      dg=-(rhoo-rhow)*xg*xk*dfe
-!      if(dabs(dg).gt.zer_df.and.dabs(dg).lt.eps_df) 
-!     &   dg=dsign(1.d0,dg)*eps_df
-!
-!      if(dabs(dg).lt.eps_df)  dg=dsign(1.d0,dg)*eps_df
-!
-      DHGEO = POROSITY*VDISPY + DH
-!
-      end select
-!
-      end function
-!      
 ! =======================================================================
 !      
        function dif1o(xc,xi)
@@ -2681,7 +2299,7 @@
             conecLadaisElem,listaDosElemsPorFace,dt,uf,&
             v,numLadosElem)
 !     
-         use mGlobaisEscalares, only: nRK, ordemRK, ndofV,ns,nvel,tTransporte,tempoNucTrans, ndofD, geomech, nnp	
+         use mGlobaisEscalares, only: nRK, ordemRK, ndofV,ns,nvel,tTransporte,tempoNucTrans, ndofD, nnp
          use mGlobaisArranjos,  only: uTempoN, mat, c
          use mLeituraEscrita,   only: prt,escreverArqParaviewIntermed,nprint,qtdImpSat
          use mLeituraEscrita,   only: isatTransiente,paraview_escalarPorElementoTransiente
