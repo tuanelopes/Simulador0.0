@@ -112,11 +112,11 @@
         keyword_name = "viscosidade_do_oleo"
         call readRealKeywordValue(keyword_name, xmio, xmio, ierr)
 
-        keyword_name = "massa_especifica_da_agua"
-        call readRealKeywordValue(keyword_name, rhow, rhow, ierr)
-!
-        keyword_name = "massa_especifica_do_oleo"
-        call readRealKeywordValue(keyword_name, rhoo, rhoo, ierr)
+!         keyword_name = "massa_especifica_da_agua"
+!         call readRealKeywordValue(keyword_name, rhow, rhow, ierr)
+! !
+!         keyword_name = "massa_especifica_do_oleo"
+!         call readRealKeywordValue(keyword_name, rhoo, rhoo, ierr)
 
         keyword_name = "saturacao_residual_da_agua"
         call readRealKeywordValue(keyword_name, srw, srw, ierr)
@@ -272,7 +272,7 @@
 !
 !.... Leitura da porosidade
 !
-      call readRandPosity
+      call readRandPorosity
 !
 !.... Leitura da porosidade
 !
@@ -355,7 +355,7 @@
     end subroutine readRandPermeability !*****************************************************************************
 
         !> Efetua a leitura de dados de porosidade
-    subroutine readRandPosity
+    subroutine readRandPorosity
         use mInputReader,    only: file_lines, findKeyword
         integer keyword_line
         character(len=50) keyword_name
@@ -372,7 +372,7 @@
         read(file_lines(keyword_line:),*) kgphi, rhophi
         keyword_line = keyword_line + 1
         read(file_lines(keyword_line:),*) normalphi
-    end subroutine readRandPosity !*****************************************************************************
+    end subroutine readRandPorosity !*****************************************************************************
     
         !> Efetua a leitura de dados de beta
     subroutine readRandBeta
@@ -535,12 +535,12 @@
 !
       keyword_name = "mean_water_density_"//trim(REGION(IREGION))
       call readRealKeywordValue(keyword_name, MEANRHOW(IREGION), MEANRHOW(IREGION), ierr)       
-!       IF (IREGION.EQ.1) MEANRHOW(IREGION) = RHOW
+      IF (IREGION.EQ.1) RHOW=MEANRHOW(IREGION)
       MEANWATER = MEANRHOW(IREGION)
 !
       keyword_name = "mean_oil_density_"//trim(REGION(IREGION))
       call readRealKeywordValue(keyword_name, MEANRHOO(IREGION), MEANRHOO(IREGION), ierr)   
-!       IF (IREGION.EQ.1) MEANRHOO(IREGION) = RHOO
+      IF (IREGION.EQ.1) RHOO=MEANRHOO(IREGION)
       MEANOIL = MEANRHOO(IREGION)
 !
       keyword_name = "mean_water_saturation_"//trim(REGION(IREGION))

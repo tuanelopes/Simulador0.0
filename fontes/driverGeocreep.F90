@@ -29,7 +29,9 @@
       implicit none
 !
       CHARACTER*128    :: FLAG 
-      real*8 :: t1, t2
+      real*8 :: t1, t2, tt1, tt2
+      
+      call timing(tt1)
       
 !-----------------------------------------------------------------------
 #ifdef withHYPRE
@@ -69,6 +71,11 @@
 #ifdef withHYPRE
       call finalizarMPI()
 #endif
+
+      call timing(tt2)
+
+      write(*,*) "**********************************************"
+      write(*,*) "TEMPO DE PAREDE=", tt2-tt1
 !
 end program reservoirSimulator
 !
@@ -220,7 +227,6 @@ end program reservoirSimulator
 !
       keyword_name = "codigos_cond_contorno_desloc"
       call leituraCodigosCondContornoDS(keyword_name,idDesloc,ndofD,numnp,neqD,iecho,iprtin)  
-
       allocate(idiagD(neqD));  idiagD=0
 !
       print*, "ndofP=", ndofP, "neqP=", neqP
@@ -243,10 +249,12 @@ end program reservoirSimulator
 !
       IF (I4SeaLoad.EQ.1) CALL InSeaLoad(FDESLOC,NDOFD,NUMNP, & 
      &                         NLVECTD,XTERLOAD)
+     
 !
 !.... input element data
 !
       call TOPologiaMALhaSistEQUAcoesDS(NALHSV, NEQV, NALHSD, NEQD) 
+      
 !
 !.... inicializa os tempos de impressao
 !
@@ -742,6 +750,8 @@ end program reservoirSimulator
       write(*,*) "**********************************************"
       write(*,*) "TEMPO TOTAL DE EXECUCAO=", &
           tempoTotalVelocidade+tempoTotalPressao+tempoTotalTransporte+tempoTotalGeomecanica
+          
+         
 
       return
 

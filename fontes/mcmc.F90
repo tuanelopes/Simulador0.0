@@ -548,7 +548,8 @@ END SUBROUTINE escreverArqParaview_escalar
             ierr=1
             return
         end if
-        IFLAG=1
+        read(file_lines(keyword_line:),'(a)') IFLAG
+        keyword_line = keyword_line + 1
         read(file_lines(keyword_line:),'(a)') ArqOut
         keyword_line = keyword_line + 1
         read(file_lines(keyword_line:),*) MCMC

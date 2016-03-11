@@ -512,6 +512,7 @@ module mInputReader
         integer*4 keyword_line
         integer :: ierr
 !
+        ierr=0
         keyword_line = findKeyword(keyword)
          if (keyword_line.eq.0) then
              target = default_value

@@ -370,6 +370,7 @@
       dimx=dabs(x(1,numnp)-x(1,1))
       dimy=dabs(x(2,numnp)-x(2,1))
       if(nsd==3)dimz=dabs(x(3,numnp)-x(3,1))
+      print*, dimx,dimy
    
       hx  =dimx/nelxReserv
       hy  =dimy/nelyReserv
