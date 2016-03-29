@@ -17,6 +17,15 @@
       real*8,  allocatable :: pressaoElem(:,:),  pressaoElemAnt(:)
       real*8,  allocatable :: velocLadal(:,:), fVeloc(:,:)
       real*8,  allocatable :: vc(:,:), ve(:,:,:)
+      REAL(8), ALLOCATABLE :: PRESPRODWELL(:)
+
+      
+      REAL(8) :: COTAREF, PRESSAOREF
+      REAL(8) :: TPRESPRODWELL,PRESMEDIAINICIAL,PRESPROD
+      REAL(8) :: ZFUNDOPOCCO
+      INTEGER :: NPRESPRODWELL,NCONDP
+      REAL(8), DIMENSION(2,100) :: PCONDP
+
 !     
       public  :: hidroGeomecanicaRT
       private :: montarMatrizVelocidadeRT,  limparSistEqAlgVelocidade
@@ -47,7 +56,6 @@
       use mPropGeoFisica,    only : calcphi, hx, hy
       use mPropGeoFisica,    only : permkx, xkkc, xltGeo
       use mSolverPardiso, only : ApVel, AiVel, solverPardisoEsparso
-      use mLeituraEscrita,   only : iflag_vel, iflag_pres, printd
       
       use mSolverGaussSkyline, only : solverGaussSkyline
       use mSolverHypre
@@ -243,7 +251,7 @@
 !..4COMPRESSIBILITY:
         use mPropGeoFisica,    only: YOUNG, POISVECT, BULK,GRAINBLK 
         use mPropGeoFisica,    ONLY: BULKWATER, BULKOIL
-        USE mMCMC,             ONLY: NCONDP,ELEM_CONDP,PRESPRODWELL,PRESPROD
+        USE mMCMC,             ONLY: ELEM_CONDP
         use mPropGeoFisica,    only: hx,hy,hz
         use mSolverHypre
 !
@@ -901,7 +909,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE DIRICHLET_POCO_GRAVIDADE_APROX(BWP,NEL,HYY,NP,GRAVI,NELWELL,satElemL)
 !
-        use mMCMC,          only : PRESPRODWELL,ELEM_CONDP
+        use mMCMC,          only : ELEM_CONDP
         use mPropGeoFisica, only : RHOW, RHOO
         use mMalha,         only : numelReserv
 !
@@ -924,9 +932,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE DIRICHLET_POCO_GRAVIDADE_OLD(BHP,NEL,HYY,NP,GRAVI,NELWELL,satElemL)
 !
-        use mGlobaisEscalares, only : PRESSAOREF,COTAREF
-        use mMCMC,             only : PRESPRODWELL,ELEM_CONDP
-        use mMCMC,             only : ZFUNDOPOCCO
+        use mMCMC,             only : ELEM_CONDP
         use mPropGeoFisica,    only : RHOW, RHOO, BULKWATER, BULKOIL
         use mMalha,            only : xc,numelReserv
 !
@@ -960,9 +966,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE DIRICHLET_POCO_GRAVIDADE(BHP,NEL,HYY,NP,GRAVI,NELWELL,satElemL)
 !
-        use mGlobaisEscalares, only : PRESSAOREF,COTAREF
-        use mMCMC,             only : PRESPRODWELL,ELEM_CONDP
-        use mMCMC,             only : ZFUNDOPOCCO
+        use mMCMC,             only : ELEM_CONDP
         use mPropGeoFisica,    only : RHOW, RHOO, BULKWATER, BULKOIL
         use mPropGeoFisica,    only : xlw,xlo,XLT
         use mMalha,            only : xc,numelReserv
@@ -1002,5 +1006,128 @@
         RETURN
 !
       END SUBROUTINE DIRICHLET_POCO_GRAVIDADE
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       end module mHidrodinamicaRT
+!
+!=======================================================================
+!
+    SUBROUTINE leituraCoordenadasPoco(N,PCOND)
+    
+      use mInputReader, only: findKeyword,file_lines
+    
+!
+      implicit none
+!
+      integer  :: N
+      REAL(8), DIMENSION(2,100) :: PCOND
+!
+      integer                        :: idata,i,j,ISTAT
+      real(8)                        :: TOL
+
+      integer*4 ::  keyword_line
+      character(len=50) keyword_name
+!
+      keyword_name = "coordenadas_poco"
+      keyword_line = findKeyword(keyword_name)
+      if (keyword_line.eq.0) then
+          return
+      endif
+
+      TOL=1.e-6
+!
+      read (file_lines(keyword_line:),  *)  N
+      keyword_line = keyword_line + 1
+      write(*,101)N
+!
+      do i=1,N
+      read (file_lines(keyword_line:),  *) (pcond(j,i),j=1,2)
+      keyword_line = keyword_line + 1
+      write(*,201)i,pcond(1,i),pcond(2,i)
+      enddo
+!
+      do i=1,N
+         do j=1,2
+            pcond(j,i)=pcond(j,i)+TOL
+         enddo
+      enddo
+      
+!
+100   format(I5)
+101   format('Numero de Pontos de Controle:',i5,/)
+200   format(3F12.7)
+201   format('Coordenada do Ponto',i5,' (',F10.4,',',F10.4,')')
+
+!
+    end SUBROUTINE 
+
+    !
+!===========================================================================
+!
+      subroutine lerParametrosHidrodinamica_DS
+!
+      use mGlobaisEscalares
+      use mInputReader, only: readIntegerKeywordValue,readRealKeywordValue
+!
+      IMPLICIT NONE
+!
+      INTEGER I, ISimulator
+! 
+      CHARACTER(LEN=128) :: NAMEFILE, TEXT, FLAG1
+      character(len=50)  :: keyword_name
+      integer :: ierr
+!
+      keyword_name='pressao_de_referencia'
+      call readRealKeywordValue(keyword_name, PRESSAOREF, PRESSAOREF, ierr)
+      WRITE(*,*)'PRESSAO DE REFERENCIA:',PRESSAOREF
+      IF(ierr==1) THEN  
+         WRITE(*,*) 'ERRO NA LEITURA DA PRESSAO DE REFERENCIA'
+         STOP
+      END IF
+      WRITE(*,*)'########################################'
+!
+      keyword_name='cota_de_referencia'
+      call readRealKeywordValue(keyword_name, COTAREF, COTAREF, ierr)
+      IF(ierr.ne.1) THEN  
+         WRITE(*,*)'COTA DE REFERENCIA:',COTAREF
+      ELSE
+         WRITE(*,*) 'ERRO NA LEITURA DA COTA DE REFERENCIA'
+         STOP
+      END IF
+!
+      WRITE(*,*)'########################################'
+!
+      keyword_name='pressao_no_fundo_do_poco_de_producao'
+      call readRealKeywordValue(keyword_name, PRESPROD, PRESPROD, ierr)
+      IF(ierr.ne.1) THEN  
+         WRITE(*,*)'PRESSAO NO POCO DE PRODUCAO:',PRESPROD     
+      ELSE
+         WRITE(*,*) 'ERRO NA LEITURA DA PRESSAO DO POCCO'
+         STOP
+      END IF
+      WRITE(*,*)'########################################'
+!
+      keyword_name='cota_do_fundo_do_poco'
+      call readRealKeywordValue(keyword_name, ZFUNDOPOCCO, ZFUNDOPOCCO, ierr)
+      IF(ierr.ne.1) THEN  
+         WRITE(*,*)'COTA DO FUNDO DO POCCO:',ZFUNDOPOCCO
+      ELSE
+         WRITE(*,*) 'ERRO NA LEITURA DA COTA DO FUNDO DO POCCO'
+         STOP
+      END IF
+      WRITE(*,*)'########################################'
+!
+      keyword_name='tempo_para_a_descompressao_do_poco'
+      call readRealKeywordValue(keyword_name, TPRESPRODWELL, TPRESPRODWELL, ierr)
+      IF(ierr.ne.1) THEN  
+         WRITE(*,*)'TEMPO PARA DESCOMPRESSAO DO POCCO:',TPRESPRODWELL
+      ELSE
+         WRITE(*,*) 'ERRO NA LEITURA DO TEMPO PARA ADESCOMPRESSAO'
+         STOP
+      END IF
+      WRITE(*,*)'########################################'
+!
+      RETURN
+!
+      END SUBROUTINE
+
+
+    
+    END MODULE mHidrodinamicaRT

@@ -171,7 +171,7 @@
       use mSolverPardiso, only: addlhsCRS, ApGeo, AiGeo
       use mSolverHypre
 !
-      use mGlobaisEscalares, only: PRESSAOREF, COTAREF
+      use mHidroDinamicaRT, only: PRESSAOREF, COTAREF
 !
       implicit none
 !
@@ -1954,7 +1954,7 @@
       use mPropGeoFisica,  only: MEANDENS, MEANBULK, RHODVECT, BULK
       use mPropGeoFisica,  only: MEANRHOW, MEANBLKW
 !
-      use mGlobaisEscalares, only: PRESSAOREF, COTAREF
+      use mHidroDinamicaRT, only: PRESSAOREF, COTAREF
 !
 !.... FUNCTION TO ADD DENSITIES ON VERTICAL DIRECTION  
 !
@@ -2222,7 +2222,7 @@
       use mPropGeoFisica,    only: GEOFORM, GEOINDIC, BULK
       use mPropGeoFisica,    only: PORE
 !
-      use mGlobaisEscalares, only: PRESSAOREF, COTAREF
+      use mHidroDinamicaRT, only: PRESSAOREF, COTAREF
       use mSolverHypre
 !
 !.... PROGRAM TO COMPUTE PLASTIC DEFORMATION OVER THE MACRO DOMAIN 

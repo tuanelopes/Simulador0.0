@@ -685,8 +685,6 @@
 !
       use mPropGeoFisica
       use mGlobaisEscalares
-      use mMCMC,             only: PRESPROD,TPRESPRODWELL
-      use mMCMC,             only: ZFUNDOPOCCO
       use mInputReader, only: readIntegerKeywordValue,readRealKeywordValue
 !
       IMPLICIT NONE
@@ -716,55 +714,55 @@
       keyword_name="tempo_de_inicio_de_injecao"
       call readRealKeywordValue(keyword_name, YEARINJ, YEARINJ, ierr)
 !
-      keyword_name='pressao_de_referencia'
-      call readRealKeywordValue(keyword_name, PRESSAOREF, PRESSAOREF, ierr)
-      WRITE(*,*)'PRESSAO DE REFERENCIA:',PRESSAOREF
-      IF(ierr==1) THEN  
-         WRITE(*,*) 'ERRO NA LEITURA DA PRESSAO DE REFERENCIA'
-         STOP
-      END IF
-      WRITE(*,*)'########################################'
-!
-      keyword_name='cota_de_referencia'
-      call readRealKeywordValue(keyword_name, COTAREF, COTAREF, ierr)
-      IF(ierr.ne.1) THEN  
-         WRITE(*,*)'COTA DE REFERENCIA:',COTAREF
-      ELSE
-         WRITE(*,*) 'ERRO NA LEITURA DA COTA DE REFERENCIA'
-         STOP
-      END IF
-!
-      WRITE(*,*)'########################################'
-!
-      keyword_name='pressao_no_fundo_do_poco_de_producao'
-      call readRealKeywordValue(keyword_name, PRESPROD, PRESPROD, ierr)
-      IF(ierr.ne.1) THEN  
-         WRITE(*,*)'PRESSAO NO POCO DE PRODUCAO:',PRESPROD     
-      ELSE
-         WRITE(*,*) 'ERRO NA LEITURA DA PRESSAO DO POCCO'
-         STOP
-      END IF
-      WRITE(*,*)'########################################'
-!
-      keyword_name='cota_do_fundo_do_poco'
-      call readRealKeywordValue(keyword_name, ZFUNDOPOCCO, ZFUNDOPOCCO, ierr)
-      IF(ierr.ne.1) THEN  
-         WRITE(*,*)'COTA DO FUNDO DO POCCO:',ZFUNDOPOCCO
-      ELSE
-         WRITE(*,*) 'ERRO NA LEITURA DA COTA DO FUNDO DO POCCO'
-         STOP
-      END IF
-      WRITE(*,*)'########################################'
-!
-      keyword_name='tempo_para_a_descompressao_do_poco'
-      call readRealKeywordValue(keyword_name, TPRESPRODWELL, TPRESPRODWELL, ierr)
-      IF(ierr.ne.1) THEN  
-         WRITE(*,*)'TEMPO PARA DESCOMPRESSAO DO POCCO:',TPRESPRODWELL
-      ELSE
-         WRITE(*,*) 'ERRO NA LEITURA DO TEMPO PARA ADESCOMPRESSAO'
-         STOP
-      END IF
-      WRITE(*,*)'########################################'
+!       keyword_name='pressao_de_referencia'
+!       call readRealKeywordValue(keyword_name, PRESSAOREF, PRESSAOREF, ierr)
+!       WRITE(*,*)'PRESSAO DE REFERENCIA:',PRESSAOREF
+!       IF(ierr==1) THEN  
+!          WRITE(*,*) 'ERRO NA LEITURA DA PRESSAO DE REFERENCIA'
+!          STOP
+!       END IF
+!       WRITE(*,*)'########################################'
+! !
+!       keyword_name='cota_de_referencia'
+!       call readRealKeywordValue(keyword_name, COTAREF, COTAREF, ierr)
+!       IF(ierr.ne.1) THEN  
+!          WRITE(*,*)'COTA DE REFERENCIA:',COTAREF
+!       ELSE
+!          WRITE(*,*) 'ERRO NA LEITURA DA COTA DE REFERENCIA'
+!          STOP
+!       END IF
+! !
+!       WRITE(*,*)'########################################'
+! !
+!       keyword_name='pressao_no_fundo_do_poco_de_producao'
+!       call readRealKeywordValue(keyword_name, PRESPROD, PRESPROD, ierr)
+!       IF(ierr.ne.1) THEN  
+!          WRITE(*,*)'PRESSAO NO POCO DE PRODUCAO:',PRESPROD     
+!       ELSE
+!          WRITE(*,*) 'ERRO NA LEITURA DA PRESSAO DO POCCO'
+!          STOP
+!       END IF
+!       WRITE(*,*)'########################################'
+! !
+!       keyword_name='cota_do_fundo_do_poco'
+!       call readRealKeywordValue(keyword_name, ZFUNDOPOCCO, ZFUNDOPOCCO, ierr)
+!       IF(ierr.ne.1) THEN  
+!          WRITE(*,*)'COTA DO FUNDO DO POCCO:',ZFUNDOPOCCO
+!       ELSE
+!          WRITE(*,*) 'ERRO NA LEITURA DA COTA DO FUNDO DO POCCO'
+!          STOP
+!       END IF
+!       WRITE(*,*)'########################################'
+! !
+!       keyword_name='tempo_para_a_descompressao_do_poco'
+!       call readRealKeywordValue(keyword_name, TPRESPRODWELL, TPRESPRODWELL, ierr)
+!       IF(ierr.ne.1) THEN  
+!          WRITE(*,*)'TEMPO PARA DESCOMPRESSAO DO POCCO:',TPRESPRODWELL
+!       ELSE
+!          WRITE(*,*) 'ERRO NA LEITURA DO TEMPO PARA ADESCOMPRESSAO'
+!          STOP
+!       END IF
+!       WRITE(*,*)'########################################'
 !
       RETURN
 !
@@ -1108,30 +1106,27 @@
 !
 !*****************************************************
 !
-      subroutine imprimirCondicoesIniciais(pressaoElem, velocLadal, phi, perm, satElem, YOUNG, DIS, PORE)
+      subroutine imprimirCondicoesIniciais(pressaoElem, velocLadal, phi, perm, satElem, YOUNG, DIS, PORE, PRESPROD)
       use mGlobaisEscalares, only: ndofP, ndofV, ndofD, tTransporte, numdx
       use mMalha,            only: x, conecNodaisElem, conecLadaisElem, nen, nsd
       use mMalha,            only: numel, numnp, numLadosElem
       use mMalha,            only: numelReserv, numLadosReserv
+      USE mPropGeoFisica,    only: SRW,PHIINICIAL,PERMINICIAL
 !
       implicit none
 !
       real*8, intent(in) :: pressaoElem(ndofP, numelReserv)
       real*8, intent(in) :: velocLadal(ndofV,numLadosReserv)
       real*8, intent(in) :: phi(numelReserv), perm(numelReserv), satElem(numelReserv)
-      real*8, intent(in) :: YOUNG(numel), DIS(ndofd,NUMNP), PORE(numelReserv)
+      real*8, intent(in) :: YOUNG(numel), DIS(ndofd,NUMNP), PORE(numelReserv), PRESPROD
+
       integer :: i, k, DZERO = 0
       LOGICAL :: SIM,NAO
       real*8  :: ZERO=0.D0
+      real*8  :: YOUNGINICIAL=5e19
 !
       SIM=.TRUE.
       NAO=.FALSE.
-!
-!.... imprime a condicao inicial da massa de agua
-!
-       if(iflag_mass==1)then
-          call MONITORMASSATOTAL(satElem,phi,zero,ifmass_out)
-       end if
 !
 !.... imprime a condicao inicial: pressao
 !
@@ -1152,7 +1147,7 @@
 !
           if(iflag_tipoPrint==2) then
              call escreverArqParaview_escalar(ipres,pressaoElem,ZERO,ifpres_out,nen, &
-                  NAO,DZERO,'PRES',ndofP)
+                  NAO,DZERO,'PRES',ndofP,PRESPROD)
           end if
        endif
 !  
@@ -1202,7 +1197,7 @@
          endif
          if(iflag_tipoPrint==2) then 
              call escreverArqParaview_escalar(isat,satElem,ZERO,ifsat_out,nen, &
-                  NAO,DZERO,' SAT',ndofP)
+                  NAO,DZERO,' SAT',ndofP,SRW)
           end if
       endif
 !
@@ -1231,11 +1226,11 @@
           endif
           if(iflag_tipoPrint==2) then
              call escreverArqParaview_escalar(iphi,phi,ZERO,ifphi_out,nen, &
-                  NAO,DZERO,'PORE',ndofP)
+                  NAO,DZERO,'PORE',ndofP,PHIINICIAL)
              call escreverArqParaview_escalar(iperm,perm,ZERO,ifperm_out,nen, &
-                  NAO,DZERO,'PERM',ndofP)
+                  NAO,DZERO,'PERM',ndofP,PERMINICIAL)
              call escreverArqParaview_escalar(iyou,YOUNG,ZERO,ifyou_out,nen, &
-                  SIM,DZERO,'YOUN',ndofP)
+                  SIM,DZERO,'YOUN',ndofP,YOUNGINICIAL)
           end if
        endif
 !
@@ -1245,17 +1240,22 @@
 !
 !*****************************************************
 !
-      subroutine imprimirSolucaoNoTempo(sat,DIS,PORE,YOUNG,pressaoElem, velocLadal, tempo)
+      subroutine imprimirSolucaoNoTempo(sat,DIS,PORE,YOUNG,pressaoElem,velocLadal,NCONDP, &
+                                        PCONDP,PRESPROD,tempo)
+!
        use mGlobaisEscalares, only : ndofP, ndofV, ndofD
        use mMalha,            only : nsd, numel, numelReserv, numLadosReserv, numLadosElem, conecLadaisElem
        use mMalha,            only : nen, numnp
-       use MMCMC
-!
+       USE mPropGeoFisica,    only : SRW,PHIINICIAL
+! 
+
       implicit none
 !
       real*8, intent(in) :: pressaoElem(ndofP,numelReserv), velocLadal(ndofV,numLadosReserv)
       real*8, intent(in) :: sat(numelReserv),DIS(ndofD,numnp),PORE(numelReserv),YOUNG(numel)
-      real*8, intent(in) :: tempo
+      REAL(8), DIMENSION(2,100) :: PCONDP
+      real*8, intent(in) :: PRESPROD, Tempo
+      integer :: NCONDP
 !
       character(21) :: labelTransp
       character(21) :: label
@@ -1271,38 +1271,38 @@
 !
 !.... imprime a condicao inicial da massa de agua
 !
-       IF(IFLAG_MASS==1)THEN
-          IF(ABS(tempo-TPRT_MASS).LE.TOL)THEN
-             TPRT_MASS = TPRT_MASS+DTPRT_MASS
-             call MONITORMASSATOTAL(sat,PORE,tempo,ifmass_out)
-          END IF
-       end if
-!
-      IF(IFLAG_CONC==1)THEN
-         IF(ABS(tempo-TPRT_CONC).LE.TOL)THEN
-	   TPRT_CONC = TPRT_CONC+DTPRT_CONC
-	   CALL MONITOR(CONC_OUT,PCONDC,NCONDC,ELEM_CONDC,sat,tempo)
-         ENDIF
-      ENDIF
-      IF(IFLAG_PRODF==1)THEN
-         IF(ABS(tempo-TPRT_PRODF).LE.TOL)THEN
-	   TPRT_PRODF = TPRT_PRODF+DTPRT_PRODF
-	   CALL MONITORPROD(PRODF_OUT,PCONDP,NCONDP,ELEM_CONDP,velocLadal,sat,tempo)
-         ENDIF
-      ENDIF
-      IF(IFLAG_PRESF==1)THEN
-         IF(ABS(tempo-TPRT_PRESF).LE.TOL)THEN
-	   TPRT_PRESF = TPRT_PRESF+DTPRT_PRESF
-	   CALL MONITOR(PRESF_OUT,PCONDPR,NCONDPR,ELEM_CONDPR,pressaoElem,tempo)
-         ENDIF
-      ENDIF
-      IF(IFLAG_DISF==1)THEN
-         IF(ABS(tempo-TPRT_DISF).LE.TOL)THEN
-	   TPRT_DISF = TPRT_DISF+DTPRT_DISF
-	   CALL MONITORV(DISF_OUT,PCONDD,NCONDD,ELEM_CONDD,DIS,tempo)
-         ENDIF
-      ENDIF
-! MCMC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        IF(IFLAG_MASS==1)THEN
+!           IF(ABS(tempo-TPRT_MASS).LE.TOL)THEN
+!              TPRT_MASS = TPRT_MASS+DTPRT_MASS
+!              call MONITORMASSATOTAL(sat,PORE,tempo,ifmass_out)
+!           END IF
+!        end if
+! !
+!       IF(IFLAG_CONC==1)THEN
+!          IF(ABS(tempo-TPRT_CONC).LE.TOL)THEN
+! 	   TPRT_CONC = TPRT_CONC+DTPRT_CONC
+! 	   CALL MONITOR(CONC_OUT,PCONDC,NCONDC,ELEM_CONDC,sat,tempo)
+!          ENDIF
+!       ENDIF
+!       IF(IFLAG_PRODF==1)THEN
+!          IF(ABS(tempo-TPRT_PRODF).LE.TOL)THEN
+! 	   TPRT_PRODF = TPRT_PRODF+DTPRT_PRODF
+! 	   CALL MONITORPROD(PRODF_OUT,PCONDP,NCONDP,ELEM_CONDP,velocLadal,sat,tempo)
+!          ENDIF
+!       ENDIF
+!       IF(IFLAG_PRESF==1)THEN
+!          IF(ABS(tempo-TPRT_PRESF).LE.TOL)THEN
+! 	   TPRT_PRESF = TPRT_PRESF+DTPRT_PRESF
+! 	   CALL MONITOR(PRESF_OUT,PCONDPR,NCONDPR,ELEM_CONDPR,pressaoElem,tempo)
+!          ENDIF
+!       ENDIF
+!       IF(IFLAG_DISF==1)THEN
+!          IF(ABS(tempo-TPRT_DISF).LE.TOL)THEN
+! 	   TPRT_DISF = TPRT_DISF+DTPRT_DISF
+! 	   CALL MONITORV(DISF_OUT,PCONDD,NCONDD,ELEM_CONDD,DIS,tempo)
+!          ENDIF
+!       ENDIF
+! ! MCMC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !.... imprime a velocidade no centro
 !
       if(iflag_vel==1) then
@@ -1353,7 +1353,7 @@
             if(abs(tempo-tprt_sat).le.TOL)then
                tprt_sat=tprt_sat+dtprt_sat
 	       npcontsat=npcontsat+1
-               call escreverArqParaview_escalar(isat,sat,tempo,ifsat_out,nen,NAO,npcontsat,' SAT',ndofP)
+               call escreverArqParaview_escalar(isat,sat,tempo,ifsat_out,nen,NAO,npcontsat,' SAT',ndofP, SRW)
             end if
          endif
       endif
@@ -1373,7 +1373,7 @@
             if(abs(tempo-tprt_pres).le.TOL)then
                tprt_pres=tprt_pres+dtprt_pres
 	       npcontpres=npcontpres+1
-               call escreverArqParaview_escalar(ipres,pressaoElem,tempo,ifpres_out,nen,NAO,npcontpres,'PRES',ndofP)
+               call escreverArqParaview_escalar(ipres,pressaoElem,tempo,ifpres_out,nen,NAO,npcontpres,'PRES',ndofP, PRESPROD)
             end if
          endif
       end if
@@ -1394,9 +1394,7 @@
                tprt_phi=tprt_phi+dtprt_phi
 	       npcontphi=npcontphi+1
                call escreverArqParaview_escalar(iphi,PORE,tempo, &
-                    ifphi_out,nen,NAO,npcontphi,'PORE',ndofP)
-!               call escreverArqParaview_escalar(iyou,YOUNG,tempo, &
-!                    ifyou_out,nen,SIM,npcontphi,'YOUN')
+                    ifphi_out,nen,NAO,npcontphi,'PORE',ndofP,PHIINICIAL)
             end if
          endif
       end if
@@ -1793,6 +1791,286 @@
 !
  2000 format(6(1pe13.6,2x))
       end subroutine
+      
+  SUBROUTINE escreverArqParaview_vetor(arquivo,campo,passo,fname,nen, &
+     NRESERV,nprint,LABEL,dim)
+!
+    USE mMalha,            only: x,nsd,numel,numnp
+    USE mPropGeoFisica,    only: GEOFORM
+    use mMalha,            only: conecNodaisElem, conecLadaisElem
+!
+    IMPLICIT NONE
+!
+    INTEGER :: ARQUIVO,ISTAT,d,i,n,nen,dim,j
+    REAL(8), DIMENSION(dim,*) :: CAMPO
+    CHARACTER(LEN=128)    :: fname,NAME
+    CHARACTER(LEN=10)     :: TEMP
+    REAL(8)               :: COORDZ = 0.0,PASSO
+    integer               :: tipo=1
+    CHARACTER(len=4)      :: EXT,LABEL
+    CHARACTER(len=5)      :: C
+    INTEGER               :: VARIOSARQ,ZERO,NPRINT
+    LOGICAL               :: NRESERV
+!
+    VARIOSARQ = 1
+    ZERO = 0
+!
+    IF(VARIOSARQ.EQ.1)THEN
+       WRITE(C,300)nprint
+       C=ADJUSTL(C)
+       EXT='.vtk'
+       NAME=ADJUSTL(TRIM(fname))//TRIM(C)//TRIM(EXT)
+       OPEN(UNIT=ARQUIVO,FILE=name,STATUS='UNKNOWN',&
+            ACTION='READWRITE',IOSTAT=ISTAT)
+    ELSE
+       WRITE(C,300)ZERO
+       C=ADJUSTL(C)
+       EXT='.vtk'
+       NAME=ADJUSTL(TRIM(fname))//TRIM(C)//TRIM(EXT)
+       OPEN(UNIT=ARQUIVO,FILE=name,STATUS='UNKNOWN',&
+            ACTION='READWRITE',IOSTAT=ISTAT,POSITION='APPEND')
+    END IF
+    WRITE(*,*)'ARQUIVO DE IMPRESSAO:',NAME
+!
+    IF(ISTAT.NE.0)THEN
+       WRITE(*,*)'ERROR ON OPENING INPUT FILE: ',fname
+       STOP
+    END IF
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    IF(VARIOSARQ.EQ.1)THEN
+       write(arquivo,'(a)')'# vtk DataFile Version 3.0'
+       write(arquivo,'(a)')'vtk output'
+       write(arquivo,'(a)')'ASCII'
+       write(arquivo,'(a)')'DATASET UNSTRUCTURED_GRID'
+       write(arquivo,'(a,i10,a)')'POINTS', numnp,' float '
+!    write(arquivo,'(a,i10,a)')'POINTS', numnpReserv,' float '
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  Escreve as coordenadas nodais
+!
+       if(nsd==2) then 
+          do i=1,numnp
+             write(arquivo,'(3(1x, 1pe15.8))') (x(d,i),d=1,nsd), coordZ 
+          end do
+       end if
+!
+       if(nsd==3) then
+          do i=1,numnp
+             write(arquivo,'(3(1x, 1pe15.8))') (x(d,i),d=1,nsd)
+          end do
+       end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Escreve as conectividades
+       write(arquivo,'(a,i10,i10)')'CELLS', numel , (nen+1) * numel
+       if(nsd==2) then
+          do  n=1,numel
+             write(arquivo,'(i10,9(2x,i10))') nen, (conecNodaisElem(i,n)-1, i = 1, nen) 
+          end do
+       end if
+!
+       if(nsd==3) then
+          do  n=1,numel
+             write(arquivo,'(i10,18(2x,i10))') nen, (conecNodaisElem(i,n)-1, i = 1, nen) 
+          end do
+       end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Escreve o tipo de celula
+       write(arquivo,'(a,i10)')'CELL_TYPES ', numel
+!
+       if(nsd==2) then
+          do  i =1,numel
+             write(arquivo,'(a)') '9'!trim(adjustl(tipo))
+          end do
+       end if
+!
+       if(nsd==3) then
+          do  i =1,numel
+             write(arquivo,'(a)') '12'!trim(adjustl(tipo))
+          end do
+       end if
+!
+       if(tipo==1) write(arquivo,'(a,i10)')'POINT_DATA ', numnp
+
+!    if(tipo==2) write(arquivo,'(a,i10)')'POINT_DATA',  numel*ndofP
+    END IF
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    WRITE(TEMP,100)PASSO
+    TEMP=ADJUSTL(TRIM(TEMP))
+    WRITE(*,*)'TEMPO da IMPRESSAO:',TEMP
+    IF(VARIOSARQ.EQ.1)THEN
+       write(arquivo,'(3a,i10)')'SCALARS ', 'DISP' , ' float ',dim
+    ELSE
+       write(arquivo,'(3a,i10)')'SCALARS ', 't='//TRIM(TEMP)//'' , ' float ',dim
+    END IF
+    write(arquivo,'(2a)')'LOOKUP_TABLE ','default'
+!
+    DO I=1,NUMNP
+       WRITE(ARQUIVO,*)(CAMPO(J,I),J=1,DIM)
+    ENDDO
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    CLOSE(ARQUIVO) 
+100 FORMAT(F10.5)
+200 FORMAT(E15.7)
+300 FORMAT(I5)
+!
+  END SUBROUTINE escreverArqParaview_vetor
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE escreverArqParaview_escalar(arquivo,campo,passo,fname,nen, &
+     NRESERV,nprint,LABEL,dim,MINIMO)
+!
+    USE mMalha,            only: x,nsd,numel,numnp,numelReserv,numnpReserv
+    USE mPropGeoFisica,    only: GEOFORM
+    use mMalha,            only: conecNodaisElem, conecLadaisElem
+
+!
+    IMPLICIT NONE
+!
+    INTEGER :: ARQUIVO,ISTAT,d,i,n,nen,nprint,NPOSN,dim
+    REAL(8), DIMENSION(dim,*) :: CAMPO
+    REAL(8) :: MINIMO
+    CHARACTER(LEN=128)    :: fname,NAME
+    CHARACTER(LEN=21)     :: TEMPO
+    REAL(8)               :: COORDZ = 0.0,PASSO,PROP
+    integer               :: tipo=1
+    INTEGER               :: NUMNPLOCAL,NUMELLOCAL
+    LOGICAL               :: NRESERV
+    CHARACTER(len=4)      :: EXT,LABEL
+    CHARACTER(len=5)      :: C
+    INTEGER               :: VARIOSARQ,ZERO
+    INTEGER, DIMENSION(numel) :: ELEMRESERV
+!
+!     MINIMO = 1E30
+    NUMNPLOCAL = numnp
+    NUMELLOCAL = NUMEL
+    VARIOSARQ = 1
+    IF(VARIOSARQ.EQ.1)THEN
+       WRITE(C,300)nprint
+       C=ADJUSTL(C)
+       EXT='.vtk'
+       NAME=ADJUSTL(TRIM(fname))//TRIM(C)//TRIM(EXT)
+    ELSE
+       WRITE(C,300)ZERO
+       C=ADJUSTL(C)
+       EXT='.vtk'
+       NAME=ADJUSTL(TRIM(fname))//TRIM(C)//TRIM(EXT)
+    END IF
+    WRITE(*,*)'ARQUIVO DE IMPRESSAO:',NAME
+!
+    IF(VARIOSARQ.EQ.1)THEN
+       OPEN(UNIT=ARQUIVO,FILE=name,STATUS='UNKNOWN',&
+            ACTION='WRITE',IOSTAT=ISTAT)
+    ELSE
+       OPEN(UNIT=ARQUIVO,FILE=name,STATUS='UNKNOWN',&
+            ACTION='READWRITE',IOSTAT=ISTAT,POSITION='APPEND')
+    END IF
+    IF(ISTAT.NE.0)THEN
+       WRITE(*,*)'ERROR ON OPENING INPUT FILE: ',fname
+       STOP
+    END IF
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+    IF(VARIOSARQ.EQ.1)THEN
+       write(arquivo,'(a)')'# vtk DataFile Version 3.0'
+       write(arquivo,'(a)')'vtk output'
+       write(arquivo,'(a)')'ASCII'
+       write(arquivo,'(a)')'DATASET UNSTRUCTURED_GRID'
+       write(arquivo,'(a,i10,a)')'POINTS', NUMNPLOCAL,' float '
+       !    write(arquivo,'(a,i10,a)')'POINTS', numnpReserv,' float '
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  Escreve as coordenadas nodais
+!
+       if(nsd==2) then 
+          do i=1,NUMNPLOCAL
+             write(arquivo,'(3(1x, 1pe15.8))') (x(d,i),d=1,nsd), coordZ 
+          end do
+       end if
+!
+       if(nsd==3) then
+          do i=1,NUMNPLOCAL
+             write(arquivo,'(3(1x, 1pe15.8))') (x(d,i),d=1,nsd)
+          end do
+       end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Escreve as conectividades
+       write(arquivo,'(a,i10,i10)')'CELLS', NUMELLOCAL , (nen+1) * NUMELLOCAL
+       if(nsd==2) then
+          do  n=1,NUMELLOCAL
+             write(arquivo,'(i10,9(2x,i10))') nen, (conecNodaisElem(i,n)-1, i = 1, nen) 
+          end do
+       end if
+!
+       if(nsd==3) then
+          do  n=1,NUMELLOCAL
+             write(arquivo,'(i10,18(2x,i10))') nen, (conecNodaisElem(i,n)-1, i = 1, nen) 
+          end do
+       end if
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Escreve o tipo de celula
+       write(arquivo,'(a,i10)')'CELL_TYPES ', NUMELLOCAL
+!
+       if(nsd==2) then
+          do  i =1,NUMELLOCAL
+             write(arquivo,'(a)') '9'!trim(adjustl(tipo))
+          end do
+       end if
+!
+       if(nsd==3) then
+          do  i =1,NUMELLOCAL
+             write(arquivo,'(a)') '12'!trim(adjustl(tipo))
+          end do
+       end if
+!
+       if(tipo==1) write(arquivo,'(a,i10)')'CELL_DATA ', NUMELLOCAL
+    ENDIF
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    WRITE(TEMPO,'(F20.4)')PASSO
+    TEMPO=ADJUSTL(TRIM(TEMPO))
+    WRITE(*,*)'TEMPO da IMPRESSAO:',TEMPO
+    IF(VARIOSARQ.EQ.1)THEN
+       write(arquivo,'(3a)')'SCALARS ', ' '//TRIM(LABEL)//'' , ' float '
+    ELSE
+       write(arquivo,'(3a)')'SCALARS ', 't='//TRIM(TEMPO)//'' , ' float '
+    ENDIF
+    write(arquivo,'(2a)')'LOOKUP_TABLE ','default'
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!     if(LABEL.EQ.' SAT')MINIMO = SRW
+!     if(LABEL.EQ.'PRES')MINIMO = PRESPROD!PRESMEDIAINICIAL
+!     IF(LABEL.EQ.'PORE')MINIMO = PHIINICIAL
+!     IF(LABEL.EQ.'PERM')MINIMO = PERMINICIAL
+!     IF(LABEL.EQ.'YOUN')MINIMO = 5e19
+!
+    DO I=1,NUMELLOCAL
+       IF(NRESERV)THEN
+          PROP = CAMPO(dim,I)
+       ELSE
+          IF(GEOFORM(I).EQ.'RESERVATORIO')THEN
+             PROP=CAMPO(dim,I)
+          ELSE
+             PROP=MINIMO
+          END IF
+       END IF
+       WRITE(ARQUIVO,*)PROP
+    ENDDO
+!
+    CLOSE(ARQUIVO) 
+100 FORMAT(F10.5)
+200 FORMAT(E15.7)
+300 FORMAT(I5)
+!
+END SUBROUTINE escreverArqParaview_escalar
 !
 !**** new *******************************************************************
 !

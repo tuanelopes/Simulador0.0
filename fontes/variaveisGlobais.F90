@@ -79,7 +79,7 @@
       LOGICAL :: INITS3, SOLIDONLY, SALTCREEP, CYLINDER
 !
       REAL(8) :: TOLSIGMA, TOLVELOC
-      REAL(8) :: COTAREF, PRESSAOREF
+
 !
       end module mGlobaisEscalares
 

@@ -29,9 +29,7 @@
       implicit none
 !
       CHARACTER*128    :: FLAG 
-      real*8 :: t1, t2, tt1, tt2
-      
-      call timing(tt1)
+      real*8 :: t1, t2
       
 !-----------------------------------------------------------------------
 #ifdef withHYPRE
@@ -71,11 +69,6 @@
 #ifdef withHYPRE
       call finalizarMPI()
 #endif
-
-      call timing(tt2)
-
-      write(*,*) "**********************************************"
-      write(*,*) "TEMPO DE PAREDE=", tt2-tt1
 !
 end program reservoirSimulator
 !
@@ -84,16 +77,7 @@ end program reservoirSimulator
       subroutine preprocessador_DS()
 !
       use mGlobaisArranjos,  only: title
-      use mGlobaisEscalares, only: TypeProcess, S3DIM, SALTCREEP
-      use mGlobaisEscalares, only: INITS3, SOLIDONLY, CYLINDER
-      use mGlobaisEscalares, only: exec, iprtin, optCC 
-      use mGlobaisEscalares, only: ndofP, ndofV, ndofD
-      use mGlobaisEscalares, only: nlvectP, nlvectV, nlvectD
-      use mGlobaisEscalares, only: simetriaGeo, simetriaVel, optSolver
-      use mGlobaisEscalares, only: geomech, novaMalha
-      use mGlobaisEscalares, only: tempoTotalVelocidade,tempoTotalPressao
-      use mGlobaisEscalares, only: tempoTotalTransporte,tempoTotalGeomecanica
-      use mGlobaisEscalares, only: tempoMontagemGeo,tempoSolverGeo,tempoMontagemVel,tempoSolverVel
+      use mGlobaisEscalares
 !
       use mAlgMatricial,     only: idVeloc, idDesloc, idiagV, idiagD
       use mAlgMatricial,     only: neqV, nalhsV, neqP, neqD, nalhsD
@@ -120,12 +104,15 @@ end program reservoirSimulator
       use mPropGeoFisica,    only: nelxReserv, nelyReserv, nelzReserv
       use mPropGeoFisica,    only: XTERLOAD, RHOW, RHOO, GEOMECLAW 
 !
-      use mHidrodinamicaRT,  only: fVeloc, pressaoElem, pressaoElemAnt
+      use mHidrodinamicaRT,  only: fVeloc, pressaoElem, pressaoElemAnt,leituraCoordenadasPoco
+      use mHidroDinamicaRT,  only: NCONDP,PCONDP, lerParametrosHidrodinamica_DS
       use mTransporte,       only: satElem, satinit
       use mGeomecanica,      only: fDesloc, InSeaLoad
       use mLeituraEscrita,   only: iflag_tipoPrint 
       use mInputReader,      only: readInputFileDS, LEIturaGERacaoCOORdenadasDS
       use mInputReader,      only: leituraCodigosCondContornoDS,leituraValoresCondContornoDS
+
+      use mMCMC,             only: INITMCMC
 !
       implicit none
 !
@@ -189,6 +176,7 @@ end program reservoirSimulator
       call lerNumericParam_DS
       call lerCreepParam_DS
       call lerSimulatorParam_DS
+      call lerParametrosHidrodinamica_DS
       call abrirArquivosResultados
       call lerRandfilesIn_DS
       if(iflag_tipoPrint.eq.3)  CALL SETUPDX
@@ -209,6 +197,11 @@ end program reservoirSimulator
 !
       nr    = 1
       nrand = 1
+!
+!.... input coordinate data well
+!      
+      call leituraCoordenadasPoco(NCONDP,PCONDP)
+      
 !  
       call alocarMemoria()
 !
@@ -227,6 +220,7 @@ end program reservoirSimulator
 !
       keyword_name = "codigos_cond_contorno_desloc"
       call leituraCodigosCondContornoDS(keyword_name,idDesloc,ndofD,numnp,neqD,iecho,iprtin)  
+
       allocate(idiagD(neqD));  idiagD=0
 !
       print*, "ndofP=", ndofP, "neqP=", neqP
@@ -249,12 +243,10 @@ end program reservoirSimulator
 !
       IF (I4SeaLoad.EQ.1) CALL InSeaLoad(FDESLOC,NDOFD,NUMNP, & 
      &                         NLVECTD,XTERLOAD)
-     
 !
 !.... input element data
 !
       call TOPologiaMALhaSistEQUAcoesDS(NALHSV, NEQV, NALHSD, NEQD) 
-      
 !
 !.... inicializa os tempos de impressao
 !
@@ -266,7 +258,7 @@ end program reservoirSimulator
 ! 
 !.... inicializa as variaveis para o MCMC
 !
-      CALL INITMCMC()
+      CALL INITMCMC(NCONDP,PCONDP)
 !
 !
  1000 format(20a4)
@@ -513,7 +505,7 @@ end program reservoirSimulator
       use mLeituraEscrita,   only : imprimirCondicoesIniciais
       use mLeituraEscrita,   only : imprimirSolucaoNoTempo, isat
       use mLeituraEscrita,   only : escreverArqParaviewIntermed
-      use mLeituraEscrita,   only : iflag_sat,iflag_tipoPrint
+      use mLeituraEscrita,   only : iflag_sat,iflag_tipoPrint,iflag_mass
       use mLeituraEscrita,   only : PRINT_DXINFO, IFEDX
 !
       use mMalha,            only : nsd, numel,numelReserv, nen
@@ -542,9 +534,10 @@ end program reservoirSimulator
 !
       use mHidrodinamicaRT,  only : hidroGeomecanicaRT,  pressaoElem
       use mHidrodinamicaRT,  only : velocLadal, pressaoElemAnt, vc
-      use MMCMC,             ONLY : PRESPRODWELL,TPRESPRODWELL
-      use MMCMC,             ONLY : PRESPROD,PRESMEDIAINICIAL,NPRESPRODWELL
+      use mHidroDinamicaRT,  only : NCONDP, NPRESPRODWELL, PCONDP, PRESMEDIAINICIAL, PRESPROD
       USE mPropGeoFisica,    only : GEOFORM,HX,HY
+      
+      use mMCMC,             only : imprimirCondicoesIniciaisMCMC,imprimirSolucaoNoTempoMCMC
 !
       IMPLICIT NONE
 !
@@ -567,7 +560,9 @@ end program reservoirSimulator
 !.... imprime condicoes iniciais
 ! 
       call imprimirCondicoesIniciais(pressaoElem, velocLadal, phi, &
-           permkx, satElem, YOUNG, DIS, PORE)
+           permkx, satElem, YOUNG, DIS, PORE, PRESPROD)
+           
+      call imprimirCondicoesIniciaisMCMC(phi, satElem)
 !
       IF(iflag_tipoPrint.EQ.3)THEN
          IF (NUMDX.GT.0) THEN
@@ -711,7 +706,9 @@ end program reservoirSimulator
 !.... imprime solucao intermediaria no tempo
 ! 
       call imprimirSolucaoNoTempo(satElem,DIS,PORE,YOUNG,pressaoElem, &
-     &                             velocLadal, tTransporte)
+     &                    velocLadal, NCONDP, PCONDP, PRESPROD, tTransporte)
+      call imprimirSolucaoNoTempoMCMC(satElem,DIS,PORE,pressaoElem, &
+                            velocLadal,NCONDP,PCONDP,tTransporte)
 !
       IF(iflag_tipoPrint.EQ.3)THEN
          IF (NUMDX.GT.0) THEN
@@ -750,8 +747,6 @@ end program reservoirSimulator
       write(*,*) "**********************************************"
       write(*,*) "TEMPO TOTAL DE EXECUCAO=", &
           tempoTotalVelocidade+tempoTotalPressao+tempoTotalTransporte+tempoTotalGeomecanica
-          
-         
 
       return
 
@@ -831,9 +826,8 @@ end program reservoirSimulator
 !
       use mHidrodinamicaRT,  only : hidroGeomecanicaRT, vc, velocLadal
       use mHidrodinamicaRT,  only : pressaoElem, pressaoElemAnt
+      use mHidroDinamicaRT,  only : NPRESPRODWELL,PRESMEDIAINICIAL,PRESPROD,PCONDP,NCONDP
 !
-      use MMCMC,             ONLY : PRESPRODWELL,TPRESPRODWELL
-      use MMCMC,             ONLY : PRESPROD,PRESMEDIAINICIAL,NPRESPRODWELL
       USE mPropGeoFisica,    only : GEOFORM,HX,HY
 !
       implicit none
@@ -860,7 +854,7 @@ end program reservoirSimulator
 !.... imprime condicoes iniciais
 ! 
       call imprimirCondicoesIniciais(pressaoElem, velocLadal, phi, & 
-     &                               permkx, satElem, YOUNG, DIS, PORE)
+     &                          permkx, satElem, YOUNG, DIS, PORE,PRESPROD)
 !
       IF(iflag_tipoPrint.EQ.3)THEN
          IF (NUMDX.GT.0) THEN
@@ -1014,7 +1008,7 @@ end program reservoirSimulator
 !.... imprime solucao intermediaria no tempo
 ! 
       call imprimirSolucaoNoTempo(satElem,DIS,PORE,YOUNG,pressaoElem, &
-    &                             velocLadal, tTransporte)
+    &                   velocLadal, NCONDP, PCONDP, PRESPROD, tTransporte)
 !
       IF(iflag_tipoPrint.EQ.3)THEN
          IF (NUMDX.GT.0) THEN
@@ -1252,6 +1246,10 @@ end program reservoirSimulator
       write(*,9003) t2-t1 
 #endif
      tempoSolverGeo=tempoSolverGeo+(t2-t1)
+      write(*,*) " 200 continue, valores nos extremos do vetor solucao geo,  "
+      write(*,'(6e16.8)') brhsD(1    :6)
+      write(*,'(6e16.8)') brhsD(neqD-5: neqD)
+
      
       RETURN      
 !
@@ -1313,6 +1311,10 @@ end program reservoirSimulator
       write(*,9003) t2-t1 
 #endif
      tempoSolverGeo=tempoSolverGeo+(t2-t1)
+
+      write(*,*) " 300 continue, valores nos extremos do vetor solucao geo,  "
+      write(*,'(6e16.8)') brhsD(1    :6)
+      write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 !
       RETURN
 !
@@ -1325,6 +1327,9 @@ end program reservoirSimulator
       write(*,9002) t2-t1 
 #endif
      tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
+      write(*,*) " 400 continue, valores nos extremos do vetor solucao geo,  "
+      write(*,'(6e16.8)') brhsD(1    :6)
+      write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 
 !
       call timing(t1)
@@ -1537,7 +1542,7 @@ end program reservoirSimulator
       use mTransporte,       only: satElemL, satElemL0, satElem0
       use mGeomecanica
       use mPropGeoFisica,    only: GEOFORM, MASCN, MASCN0, PHIEULER  
-      use mHidrodinamicaRT,  only: pressaoElem, pressaoElemAnt 
+      use mHidrodinamicaRT,  only: pressaoElem, pressaoElemAnt,PRESPRODWELL,NCONDP
       use mHidrodinamicaRT,  only: vc, ve, velocLadal, fVeloc
 #ifdef withcrs
       use mSolverPardiso, only: listaDosElemsPorNoCRS
@@ -1553,6 +1558,8 @@ end program reservoirSimulator
       pressaoElemAnt = 0.0D0
       allocate(velocLadal (ndofV,numLadosReserv))
       velocLadal = 0.0D0
+      ALLOCATE(PRESPRODWELL(NCONDP))
+      PRESPRODWELL = 0.0D0
       allocate(ve (nsd,nen,numelReserv))
       ve = 0.0D0
       allocate(vc (nsd,numelReserv))
@@ -2027,7 +2034,7 @@ end program reservoirSimulator
       use mMalha,            only : numel
       USE mPropGeoFisica,    only : GEOFORM
       use mHidroDinamicaRT,  only : pressaoElem
-      use MMCMC,             ONLY : TPRESPRODWELL,NPRESPRODWELL,PRESMEDIAINICIAL
+      use mHidroDinamicaRT,  ONLY : TPRESPRODWELL,NPRESPRODWELL,PRESMEDIAINICIAL
 !
       IMPLICIT NONE
 !
