@@ -6,7 +6,7 @@
 !         bidu@lncc.br, tuane@lncc.br
 !
 !         LNCC/MCT
-!         Petropolis, 07.2013
+!         Petropolis, 05.2016
 ! 
 !     ************************************************************
 !     *                                                          *
