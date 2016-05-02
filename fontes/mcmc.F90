@@ -1,11 +1,13 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 MODULE MMCMC
+  use mHidrodinamicart, only   :  ELEM_CONDP_Hidro=>ELEM_CONDP
+
   integer :: IFLAG_PRODF,IFLAG_DISF,IFLAG_CONC,IFLAG_PRESF
   REAL(8) :: TPRT_PRODF,DTPRT_PRODF,TPRT_DISF,DTPRT_DISF
   REAL(8) :: TPRT_PRESF,DTPRT_PRESF,TPRT_CONC,DTPRT_CONC
   REAL(8), DIMENSION(2,100) :: PCONDC,PCONDD,PCONDPR
-  INTEGER, DIMENSION(100)   :: ELEM_CONDC,ELEM_CONDD,ELEM_CONDP,ELEM_CONDPR
+  INTEGER, DIMENSION(100) :: ELEM_CONDC,ELEM_CONDD,ELEM_CONDPR
   CHARACTER(LEN=128) :: DISF_IN,DISF_OUT,PRODF_IN,PRODF_OUT
   CHARACTER(LEN=128) :: PRESF_IN,PRESF_OUT,CONC_OUT,CONC_IN
   INTEGER :: MCMCCONC,MCMCPRODF,MCMCDISF,NCONDC,NCONDD
@@ -126,7 +128,7 @@ MODULE MMCMC
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     CALL MONITORPOSITION(PCONDC, NCONDC, ELEM_CONDC)
-    CALL MONITORPOSITION(PCONDP, NCONDP, ELEM_CONDP)
+    CALL MONITORPOSITION(PCONDP, NCONDP, ELEM_CONDP_Hidro)
     CALL MONITORPOSITION(PCONDD, NCONDD, ELEM_CONDD)
     CALL MONITORPOSITION(PCONDPR,NCONDPR,ELEM_CONDPR)
 !
@@ -341,8 +343,8 @@ MODULE MMCMC
 !=======================================================================
 !
   SUBROUTINE MONITORV(FNOME,PCOND,N,ELEM_COND,U,T)
-    use mGlobaisEscalares, only : ndofD
-    USE mMalha,             only: x,numnp,conecNodaisElem
+    use mGeomecanica, only : ndofD
+    USE mMalha,       only: x,numnp,conecNodaisElem
     IMPLICIT NONE
 !
     INTEGER :: N,INFILE,NEL,J
@@ -386,7 +388,7 @@ MODULE MMCMC
       SUBROUTINE MONITORPROD(FNOME,PCOND,N,ELEM_COND,VEL,U,T)
       use mMalha,            only: numLadosReserv,numel
       use mMalha,            only: conecLadaisElem
-      use mGlobaisEscalares, only: ndofV
+      use mHidrodinamicart,  only: ndofV
       use mPropGeoFisica,    only: hy,xlw,xlo,XLT
 !
       IMPLICIT NONE
@@ -438,7 +440,7 @@ MODULE MMCMC
 !
      subroutine imprimirCondicoesIniciaisMCMC(phi, satElem)
       use mMalha,            only: numelReserv
-      use mLeituraEscrita,   only: iflag_mass, ifmass_out
+      use mLeituraEscritaSimHidroGeoMec,   only: iflag_mass, ifmass_out
 !
       implicit none
 !
@@ -456,10 +458,11 @@ MODULE MMCMC
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  
       subroutine imprimirSolucaoNoTempoMCMC(sat,DIS,PORE,pressaoElem,velocLadal,NCONDP,PCONDP,tempo)
-       use mGlobaisEscalares, only : ndofP, ndofV, ndofD
-       use mMalha,            only : nsd, numel, numelReserv, numLadosReserv, numLadosElem, conecLadaisElem
-       use mMalha,            only : nen, numnp
-       use mLeituraEscrita,   only : IFLAG_MASS,DTPRT_MASS, ifmass_out, TPRT_MASS
+       use mHidrodinamicart,  only: ndofP, ndofV
+       use mGeomecanica,      only: ndofD
+       use mMalha,            only: nsd, numel, numelReserv, numLadosReserv, numLadosElem, conecLadaisElem
+       use mMalha,            only: nen, numnp
+       use mLeituraEscritaSimHidroGeoMec,   only: IFLAG_MASS,DTPRT_MASS, ifmass_out, TPRT_MASS
 ! 
       implicit none
 !
@@ -489,7 +492,7 @@ MODULE MMCMC
       IF(IFLAG_PRODF==1)THEN
          IF(ABS(tempo-TPRT_PRODF).LE.TOL)THEN
 	   TPRT_PRODF = TPRT_PRODF+DTPRT_PRODF
-	   CALL MONITORPROD(PRODF_OUT,PCONDP,NCONDP,ELEM_CONDP,velocLadal,sat,tempo)
+	   CALL MONITORPROD(PRODF_OUT,PCONDP,NCONDP,ELEM_CONDP_Hidro,velocLadal,sat,tempo)
          ENDIF
       ENDIF
       IF(IFLAG_PRESF==1)THEN

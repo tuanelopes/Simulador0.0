@@ -723,7 +723,6 @@ module mFuncoesDeForma
       subroutine shgq(xl,det,shl,shg,npint,nel,quad,nen)  
 !
       use mLeituraEscrita, only: iecho
-      use mAlgMatricial,   only: rowdot
 !
 !.... program to calculate global derivatives of shape functions and
 !        jacobian determinants for a  quadrilateral element
@@ -753,6 +752,7 @@ module mFuncoesDeForma
 !
       real*8 :: xs(2,2), temp
       integer:: i, l, j
+      real*8, external :: rowdot
 
       xs=0.d0
 
@@ -807,7 +807,6 @@ module mFuncoesDeForma
       subroutine shg3d(xl,det,shl,shg,npint,nel,nen)
 !
       use mLeituraEscrita, only: iecho
-      use mAlgMatricial, only: rowdot
 !
 !.... program to calculate global derivatives of shape functions and
 !        jacobian determinants for a  quadrilateral element
@@ -840,6 +839,7 @@ module mFuncoesDeForma
       real*8 cof11, cof12, cof13, cof21, cof22, cof23, cof31, cof32, cof33
       real*8 temp1, temp2, temp3
       integer me
+      real*8, external :: rowdot
 !
 !     real*8, external :: rowdot
 
@@ -1281,7 +1281,6 @@ module mFuncoesDeForma
 !**** new **********************************************************************
       subroutine shg2q(xl,shl,shl2,shg2,npint,nel,neg,quad,nen) 
 !
-      use mAlgMatricial, only: rowdot
       use mLeituraEscrita, only: iecho
 !
 !.... program to calculate global second derivatives of shape functions
@@ -1310,6 +1309,8 @@ module mFuncoesDeForma
       real*8 :: xl(2,*),shl(3,nen,*),shl2(3,nen,*),shg2(3,nen,*)
       integer npint, nel, neg, nen
       logical quad
+      
+      real*8, external :: rowdot
 !
       real*8 :: xs(2,2),t1(3,2),t2(3,3),c1(3,2), det
       real*8 :: dxirx, dxiry, detarx, detary

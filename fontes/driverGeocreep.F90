@@ -21,15 +21,17 @@
   program reservoirSimulator
 !
       use mGlobaisEscalares, only: exec, SOLIDONLY, SALTCREEP
-      use mLeituraEscrita,   only: abrirArquivosInformacoesMalha
-      use mLeituraEscrita,   only: fecharArquivos
+      use mLeituraEscrita,   only: fecharArquivosBase, abrirArquivosInformacoesMalha
+      use mLeituraEscritaSimHidroGeoMec,   only: fecharArquivosSimHidroGeoMec
       use mSolverHypre,      only: inicializarMPI, finalizarMPI
       use mSolverHypre,      only: myid, num_procs, mpi_comm
 !
       implicit none
 !
       CHARACTER*128    :: FLAG 
-      real*8 :: t1, t2
+      real*8 :: t1, t2, t3, t4
+      
+      call timing(t3)
       
 !-----------------------------------------------------------------------
 #ifdef withHYPRE
@@ -55,20 +57,24 @@
          print*, ""
          print*, "Iniciando o PROCESSAMENTO..."
          CALL STRESS_INIT()
+      
          IF (.NOT.SOLIDONLY) THEN 
             IF (SALTCREEP) THEN 
                  CALL processamento_creep()
-              ELSE
+              ELSE                 
                  CALL processamento_elast()
             ENDIF
          ENDIF 
       ENDIF
 !
-      call fecharArquivos()
+      call fecharArquivosBase()
+      call fecharArquivosSimHidroGeoMec()
 !
 #ifdef withHYPRE
       call finalizarMPI()
 #endif
+      call timing(t4)
+      write(*,*) "TEMPO DE PAREDE TOTAL DE MEDIDO=", t4 - t3, " segundos " 
 !
 end program reservoirSimulator
 !
@@ -76,11 +82,13 @@ end program reservoirSimulator
 !
       subroutine preprocessador_DS()
 !
-      use mGlobaisArranjos,  only: title
+      use mGlobaisArranjos,  only: title, availableSolvers
       use mGlobaisEscalares
+      use mGeomecanica, only: ndofD, nlvectD 
+      use mHidrodinamicaRT, only: ndofV, nlvectV, nlvectP, ndofP 
 !
-      use mAlgMatricial,     only: idVeloc, idDesloc, idiagV, idiagD
-      use mAlgMatricial,     only: neqV, nalhsV, neqP, neqD, nalhsD
+      use mGeomecanica,      only: idDesloc, idiagD, neqD, nalhsD
+      use mHidroDinamicaRT,  only: neqV, nalhsV, idiagV, idVeloc
 !
       use mMalha,            only: nen, nsd, numel
       use mMalha,            only: numLadosElem, numLadosReserv
@@ -91,12 +99,12 @@ end program reservoirSimulator
       use mMalha,            only: IDome, I4SeaLoad
       use mMalha,            only: FNCPROCESS, FNCINIT, FNCSOLID
 !
-      use mLeituraEscrita,   only: iin, iecho, icoords, echo, ifdata
-      use mLeituraEscrita,   only: LEITuraGERAcaoCOORdenadas_DS
-      use mLeituraEscrita,   only: inittime,lerDataIn_DS,lerNumericParam_DS
-      use mLeituraEscrita,   only: lerCreepParam_DS, lerGeoMechParam_DS
-      use mLeituraEscrita,   only: SETUPDX, abrirArquivosResultados, lerSimulatorParam_DS, lerRandfilesIn_DS
-      use mLeituraEscrita,   only: readSetupPhaseDS
+      use mLeituraEscrita,   only: iin, iecho, icoords, echo, iflag_tipoPrint, LEITuraGERAcaoCOORdenadas_DS
+      use mLeituraEscritaSimHidroGeoMec,   only: leituraGeoformations_DS, ifdata
+      use mLeituraEscritaSimHidroGeoMec,   only: inittime,lerDataIn_DS,lerNumericParam_DS
+      use mLeituraEscritaSimHidroGeoMec,   only: lerCreepParam_DS, lerGeoMechParam_DS
+      use mLeituraEscritaSimHidroGeoMec,   only: SETUPDX, abrirArquivosResultados, lerSimulatorParam_DS, lerRandfilesIn_DS
+      use mLeituraEscritaSimHidroGeoMec,   only: readSetupPhaseDS
 !
       use mPropGeoFisica,    only: lerPropriedadesFisicas
       use mPropGeoFisica,    only: nelx, nely, nelz
@@ -105,10 +113,9 @@ end program reservoirSimulator
       use mPropGeoFisica,    only: XTERLOAD, RHOW, RHOO, GEOMECLAW 
 !
       use mHidrodinamicaRT,  only: fVeloc, pressaoElem, pressaoElemAnt,leituraCoordenadasPoco
-      use mHidroDinamicaRT,  only: NCONDP,PCONDP, lerParametrosHidrodinamica_DS
+      use mHidroDinamicaRT,  only: NCONDP,PCONDP, lerParametrosHidrodinamica_DS, optSolverV
       use mTransporte,       only: satElem, satinit
-      use mGeomecanica,      only: fDesloc, InSeaLoad
-      use mLeituraEscrita,   only: iflag_tipoPrint 
+      use mGeomecanica,      only: fDesloc, InSeaLoad, optSolverD
       use mInputReader,      only: readInputFileDS, LEIturaGERacaoCOORdenadasDS
       use mInputReader,      only: leituraCodigosCondContornoDS,leituraValoresCondContornoDS
 
@@ -139,10 +146,64 @@ end program reservoirSimulator
       CYLINDER  = .FALSE.
       SALTCREEP = .FALSE.
       SOLIDONLY = .FALSE.
+      availableSolvers=.false.
+      
+      optSolverV='skyline'
+      optSolverD='skyline'
       
       open(unit=ifdata, file= 'inputDS.dat'  )
       call readInputFileDS(ifdata)
-      call readSetupPhaseDS
+      call readSetupPhaseDS(nlvectV, nlvectP, nlvectD, optSolverV, optSolverD)
+    
+      availableSolvers(1)=.true. !skyline
+#ifdef withPardiso
+      availableSolvers(2)=.true. !pardiso
+#endif
+#ifdef withHYPRE
+      availableSolvers(3)=.true. !hypre
+#endif
+
+     if(optSolverV=='pardiso'.or.optSolverD=='pardiso')then
+        if(availableSolvers(2).eqv..false.) then
+           print*, "O Solver escolhido (Pardiso) não está disponível"
+           print*, "Solvers disponiveis:"
+           print*, "                      SKYLINE"
+           if(availableSolvers(3).eqv..true.) print*, "                      HYPRE"
+           stop
+        endif
+     endif
+     if(optSolverV=='hypre'.or.optSolverD=='hypre')then
+        if(availableSolvers(3).eqv..false.) then
+           print*, "O Solver escolhido (HYPRE) não está disponível"
+           print*, "Solvers disponiveis:"
+           print*, "                      SKYLINE"
+           if(availableSolvers(2).eqv..true.) print*, "                      PARDISO"
+           stop
+        endif
+     endif
+
+      if(optSolverV=="pardiso") simetriaVel=.true.
+      if(optSolverD=="pardiso") simetriaGeo=.true.
+      if(optSolverV=="hypre") simetriaVel=.false.
+      if(optSolverD=="hypre") simetriaGeo=.false.
+     
+     !Escolha do solver     
+!       optSolverV='skyline'
+!       optSolverD='skyline'
+! #ifdef withPardiso
+!       optSolverV='pardiso'
+!       optSolverD='pardiso'
+!       simetriaVel=.true. ! 0 para não simetrico ou 1 para simetrico
+!       simetriaGeo=.true. ! 0 para não simetrico ou 1 para simetrico
+! #endif
+! #ifdef withHYPRE
+!       optSolverV='hypre'
+!       optSolverD='hypre'      
+!       simetriaVel=.false.
+!       simetriaGeo=.false. 
+! #endif
+
+      write(*,9001)  optSolverV, optSolverD
 !
 !.... STRESS DIMENSION PHISICS: S3DIM
 !
@@ -208,6 +269,8 @@ end program reservoirSimulator
 !.... input coordinate data
 !
       call LEITuraGERAcaoCOORdenadas_DS(x,nsd,numnp, iin, icoords, iprtin)
+      
+      call leituraGeoformations_DS(x, nsd, numnp)
 !
 !.... input boundary condition data and establish equation numbers
 !
@@ -223,7 +286,6 @@ end program reservoirSimulator
 
       allocate(idiagD(neqD));  idiagD=0
 !
-      print*, "ndofP=", ndofP, "neqP=", neqP
       print*, "ndofV=", ndofV, "neqV=", neqV
       print*, "ndofD=", ndofD, "neqD=", neqD
 !
@@ -305,6 +367,7 @@ end program reservoirSimulator
      &' Multiply Sea Load on Neumann Conditions (I4SeaLoad) = ',I2/5X,&
      &'    eq. 0, Not Multiply by External Load               ',   /5x,&
      &'    eq. 1, Multiply by External Load                   ',  //)
+ 9001  FORMAT("Solver para a solucao do sistema de equacoes: Hidro:",A7, ", Geo:", A7)
 !5x,&
 !     &' Integer to Read Curve Dome Profile      (IDome    ) = ',I2/5X,&
 !     &'    eq. 0, Not Read Sismic Profile for Dome            ',   /5x,&
@@ -317,8 +380,10 @@ end program reservoirSimulator
       SUBROUTINE STRESS_INIT()
 !
       use mGlobaisEscalares
-      use mAlgMatricial,     only : ALHSD, idDesloc
-      use mLeituraEscrita,   only : PRINT_DXMESH, PRINT_DXINFO, IFEDX
+      use mGeomecanica, only: ndofD, nlvectD 
+      use mHidrodinamicaRT, only: ndofV, nlvectV, nlvectP, ndofP 
+      use mGeomecanica,      only : ALHSD, idDesloc
+      use mLeituraEscritaSimHidroGeoMec,   only : PRINT_DXMESH, PRINT_DXINFO, IFEDX
       use mLeituraEscrita,   only : iflag_tipoPrint
       use mMalha,            only : nsd, numel, nen, numnp
       use mMalha,            only : numelReserv, numnpReserv 
@@ -352,7 +417,7 @@ end program reservoirSimulator
 !.... SETUP INITIAL HIDROSTATIC PORE-PRESSURE 
 !
       CALL GEOMECHANIC('INIT_GEOMECH_ARRAY')
-!
+!       
       IF (CYLINDER) THEN
          CALL CREEP_EXAMPLE()
          RETURN
@@ -415,8 +480,11 @@ end program reservoirSimulator
       SUBROUTINE CREEP_EXAMPLE()
 !
       use mGlobaisEscalares
-      use mLeituraEscrita,   only : PRINT_DXMESH
       use mLeituraEscrita,   only : iflag_tipoPrint
+      use mGeomecanica, only: ndofD, nlvectD 
+      use mHidrodinamicaRT, only: ndofV, nlvectV, nlvectP, ndofP 
+      use mLeituraEscritaSimHidroGeoMec,   only : PRINT_DXMESH
+
 !
       use mMalha,            only : x, conecNodaisElem
 !
@@ -446,10 +514,11 @@ end program reservoirSimulator
         CALL GEOMECHANIC('GEOMECHANICS_CREEP')
         ERRSIZE = RESIDUAL/RESMAX 
         write(*,5000) ERRSIZE 
-!
+! !
 !.... ..TEST RESIDUAL NORM WITH TOLERANCE CRITERIA 4 CREEP
 !
         IF ((ERRSIZE.GT.TOLCREEP).AND.(.NOT.LJUMP)) GOTO 50
+       
 !.... 
  70   CONTINUE
 !
@@ -498,15 +567,18 @@ end program reservoirSimulator
       subroutine processamento_elast()
 !
       use mGlobaisEscalares
-      use mAlgMatricial,     only : neqP, nAlhsP, neqV, idDesloc
-      use mAlgMatricial,     only : nAlhsV, alhsV, brhsV, ALHSD
+      use mLeituraEscrita, only: iflag_tipoPrint
+      use mGeomecanica, only: ndofD, nlvectD 
+      use mHidrodinamicaRT, only: ndofV, nlvectV, nlvectP, ndofP 
+      use mGeomecanica,      only : idDesloc, ALHSD
+      use mHidroDinamicaRT,  only : nAlhsV, alhsV, brhsV,neqV
       use mGlobaisArranjos,  only : mat, c
 !
-      use mLeituraEscrita,   only : imprimirCondicoesIniciais
-      use mLeituraEscrita,   only : imprimirSolucaoNoTempo, isat
-      use mLeituraEscrita,   only : escreverArqParaviewIntermed
-      use mLeituraEscrita,   only : iflag_sat,iflag_tipoPrint,iflag_mass
-      use mLeituraEscrita,   only : PRINT_DXINFO, IFEDX
+      use mLeituraEscritaSimHidroGeoMec,   only : imprimirCondicoesIniciais
+      use mLeituraEscritaSimHidroGeoMec,   only : imprimirSolucaoNoTempo
+      use mLeituraEscritaSimHidroGeoMec,   only : isat,escreverArqParaviewIntermed
+      use mLeituraEscritaSimHidroGeoMec,   only : iflag_sat,iflag_mass
+      use mLeituraEscritaSimHidroGeoMec,   only : PRINT_DXINFO, IFEDX
 !
       use mMalha,            only : nsd, numel,numelReserv, nen
       use mMalha,            only : numnp, numnpReserv
@@ -555,12 +627,12 @@ end program reservoirSimulator
       REAL(8), external :: DESPRESSURIZAR_INIT
       REAL(8), DIMENSION(numelReserv)      :: SIGMAK
       REAL(8), DIMENSION(1,numLadosReserv) :: VELOCITYL
-
+      
 !
 !.... imprime condicoes iniciais
 ! 
       call imprimirCondicoesIniciais(pressaoElem, velocLadal, phi, &
-           permkx, satElem, YOUNG, DIS, PORE, PRESPROD)
+           permkx, satElem, YOUNG, DIS, PORE, PRESPROD,ndofV, ndofP, ndofD)
            
       call imprimirCondicoesIniciaisMCMC(phi, satElem)
 !
@@ -706,7 +778,7 @@ end program reservoirSimulator
 !.... imprime solucao intermediaria no tempo
 ! 
       call imprimirSolucaoNoTempo(satElem,DIS,PORE,YOUNG,pressaoElem, &
-     &                    velocLadal, NCONDP, PCONDP, PRESPROD, tTransporte)
+     &                    velocLadal, NCONDP, PCONDP, PRESPROD, tTransporte, ndofV, ndofP, ndofD)
       call imprimirSolucaoNoTempoMCMC(satElem,DIS,PORE,pressaoElem, &
                             velocLadal,NCONDP,PCONDP,tTransporte)
 !
@@ -745,8 +817,10 @@ end program reservoirSimulator
       write(*,*) "      Montagem geomecanica=", tempoMontagemGeo
       write(*,*) "      Solver geomecanica=", tempoSolverGeo
       write(*,*) "**********************************************"
-      write(*,*) "TEMPO TOTAL DE EXECUCAO=", &
-          tempoTotalVelocidade+tempoTotalPressao+tempoTotalTransporte+tempoTotalGeomecanica
+      write(*,*) "SOMATORIO DOS TEMPOS =", tempoTotalVelocidade+ &
+                                           tempoTotalPressao+ &
+                                           tempoTotalTransporte+ &
+                                           tempoTotalGeomecanica,  " segundos "
 
       return
 
@@ -788,16 +862,19 @@ end program reservoirSimulator
 !**** new *******************************************************************
 !
       subroutine processamento_creep()
-      use mAlgMatricial,     only : neqP, nAlhsP, neqV
-      use mAlgMatricial,     only : nAlhsV, alhsV, brhsV, ALHSD
+      use mLeituraEscrita, only: iflag_tipoPrint
+      
+      use mHidroDinamicaRT,  only : neqV,nAlhsV, alhsV, brhsV
+      use mGeomecanica,      only : ALHSD
       use mGlobaisArranjos,  only : mat, c
       use mGlobaisEscalares
+      use mGeomecanica, only: ndofD, nlvectD 
+      use mHidrodinamicaRT, only: ndofV, nlvectV, nlvectP, ndofP 
 !
-      use mLeituraEscrita,   only : imprimirCondicoesIniciais
-      use mLeituraEscrita,   only : imprimirSolucaoNoTempo
-      use mLeituraEscrita,   only : escreverArqParaviewIntermed
-      use mLeituraEscrita,   only : PRINT_DXINFO, IFEDX
-      use mLeituraEscrita,   only : isat, iflag_sat,iflag_tipoPrint
+      use mLeituraEscritaSimHidroGeoMec,   only : imprimirCondicoesIniciais,imprimirSolucaoNoTempo
+      use mLeituraEscritaSimHidroGeoMec,   only : escreverArqParaviewIntermed
+      use mLeituraEscritaSimHidroGeoMec,   only : PRINT_DXINFO, IFEDX
+      use mLeituraEscritaSimHidroGeoMec,   only : isat, iflag_sat
 !
       use mMalha,            only : nsd, numel, numelReserv, nen
       use mMalha,            only : numnp, numnpReserv
@@ -854,7 +931,7 @@ end program reservoirSimulator
 !.... imprime condicoes iniciais
 ! 
       call imprimirCondicoesIniciais(pressaoElem, velocLadal, phi, & 
-     &                          permkx, satElem, YOUNG, DIS, PORE,PRESPROD)
+     &            permkx, satElem, YOUNG, DIS, PORE,PRESPROD, NDOFV, NDOFP, NDOFD)
 !
       IF(iflag_tipoPrint.EQ.3)THEN
          IF (NUMDX.GT.0) THEN
@@ -1008,7 +1085,7 @@ end program reservoirSimulator
 !.... imprime solucao intermediaria no tempo
 ! 
       call imprimirSolucaoNoTempo(satElem,DIS,PORE,YOUNG,pressaoElem, &
-    &                   velocLadal, NCONDP, PCONDP, PRESPROD, tTransporte)
+    &       velocLadal, NCONDP, PCONDP, PRESPROD, tTransporte, NDOFV,NDOFP, NDOFD)
 !
       IF(iflag_tipoPrint.EQ.3)THEN
          IF (NUMDX.GT.0) THEN
@@ -1133,9 +1210,8 @@ end program reservoirSimulator
       subroutine GEOMECHANIC(fase)
       use mGeomecanica
       use mHidrodinamicaRT,  only: pressaoElemAnt, pressaoElem
-      use mAlgMatricial,     only: idDesloc, LOAD, FTOD, btod
-      use mAlgMatricial,     only: coldot, back, factor, idDesloc
-      use mAlgMatricial,     only: ALHSD, BRHSD, NALHSD, NEQD, idiagD
+      use mGeomecanica,      only: ALHSD, BRHSD, NALHSD, NEQD, idiagD, idDesloc
+      use mGeomecanica,      only: optSolverD, ptD, iparmD, dparmD, ApGeo, AiGeo
       use mPropGeoFisica,    only: PORE0, PORE, PHI, PHI0, PHIEULER
       use mPropGeoFisica,    only: TOLCREEP, GEOFORM, YOUNG
       use mPropGeoFisica,    only: PERMKX,  MASCN0, MASCN
@@ -1144,12 +1220,12 @@ end program reservoirSimulator
       use mMalha,            only: numelReserv, numnpReserv
       use mMalha,            only: conecNodaisElem, conecLadaisElem
       use mMalha,            only: numLadosElem, numLadosReserv
-      use mGlobaisEscalares, only: ndofD, nlvectD, ndofV
+      use mGeomecanica, only: ndofD, nlvectD 
+      use mHidrodinamicaRT, only: ndofV, nlvectV, nlvectP, ndofP 
       use mGlobaisEscalares, only: nnp, nrowsh
-      use mGlobaisEscalares, only: optSolver, simetriaGeo
+      use mGlobaisEscalares, only: simetriaGeo
       use mGlobaisEscalares, only: tempoMontagemGeo, tempoSolverGeo
       use mTransporte,       only: satElemAnt, satElem
-      use mSolverPardiso,    only: ApGeo, AiGeo
       use mSolverPardiso,    only: solverPardisoEsparso
       use mSolverGaussSkyline, only: solverGaussSkyline
       use mSolverHypre
@@ -1164,6 +1240,7 @@ end program reservoirSimulator
       integer :: num_iterations
 !
       CHARACTER*18, DIMENSION(9) :: REFTASK
+      real*8, external :: coldot
 !
       DATA REFTASK(1)     ,     REFTASK(2)     ,     REFTASK(3)     /&
      &'INIT_GEOMECH_ARRAY','ELASTIC_BBAR_MATRX','RIGHT_SIDE_2_SOLVE'/&
@@ -1197,7 +1274,7 @@ end program reservoirSimulator
      tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
 
       call timing(t1)
-      if(optSolver=='hypre') then
+      if(optSolverD=='hypre') then
 
          call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
          call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
@@ -1226,16 +1303,16 @@ end program reservoirSimulator
 
       endif
 !
-      if (optSolver=='pardiso') then
+      if (optSolverD=='pardiso') then
          write(*,'(a)') '   //========> solver direto PARDISO, GEOMECHANICS'
         if(NNP==0) &
-        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'reor')
+        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'reor')
         
-        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'fact')
-        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'back')
+        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'fact')
+        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
       endif
 !
-      if (optSolver=='skyline') then
+      if (optSolverD=='skyline') then
          write(*,'(a)') '   //========> solver direto SKYLINE, GEOMECHANICS'
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'fact')
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
@@ -1247,10 +1324,9 @@ end program reservoirSimulator
 #endif
      tempoSolverGeo=tempoSolverGeo+(t2-t1)
       write(*,*) " 200 continue, valores nos extremos do vetor solucao geo,  "
-      write(*,'(6e16.8)') brhsD(1    :6)
-      write(*,'(6e16.8)') brhsD(neqD-5: neqD)
+      write(*,'(6e16.8)') brhsD(1    :5)
+      write(*,'(6e16.8)') brhsD(neqD-4: neqD)
 
-     
       RETURN      
 !
 300   CONTINUE     !....  fase=='RIGHT_SIDE_2_SOLVE'
@@ -1264,7 +1340,7 @@ end program reservoirSimulator
      tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
 
       call timing(t1)
-      if(optSolver=='hypre') then
+      if(optSolverD=='hypre') then
 
 !         call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
          call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
@@ -1292,12 +1368,12 @@ end program reservoirSimulator
          call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
       endif
 !
-      IF (optSolver=='pardiso') then
+      IF (optSolverD=='pardiso') then
          write(*,'(a)') '   //========> solver direto PARDISO, GEOMECHANICS'
-         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'back')
+         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
       endif
 !
-      if (optSolver=='skyline') then
+      if (optSolverD=='skyline') then
          write(*,'(a)') '   //========> solver direto SKYLINE, GEOMECHANICS'
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
       end if
@@ -1342,7 +1418,7 @@ end program reservoirSimulator
 !     
       WRITE(*,4000) RESIDUAL,resmax
 
-      if(optSolver=='hypre') then
+      if(optSolverD=='hypre') then
 
          write(*,'(a)') ', solver iterativo HYPRE, GEOMECHANIC'
          if(.not.allocated(initialGuess_G)) then
@@ -1366,11 +1442,11 @@ end program reservoirSimulator
          call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
       endif      
       
-      if (optSolver=='pardiso') then
+      if (optSolverD=='pardiso') then
          write(*,'(a)') '    |====> solver direto PARDISO, GEOMECHANICS'
-         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, neqD, nalhsD, simetriaGeo, 'geo', 'full')
+         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'full')
       endif
-      if (optSolver=='skyline') then
+      if (optSolverD=='skyline') then
          write(*,'(a)') '    |====> solver direto SKYLINE, GEOMECHANICS'
 !          call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'full')
@@ -1381,11 +1457,12 @@ end program reservoirSimulator
       write(*,9003) t2-t1 
 #endif
      tempoSolverGeo=tempoSolverGeo+(t2-t1)
-
+     
 !
 !.... UPDATE TRIAL DISPLACEMENT WITH INCREMENT 
 !
       CALL UPDATEINCR(idDesloc,BRHSD,NDOFD,NUMNP)
+     
 !
 !.... NEXT LINE VISCO-ELASTIC EVOLUTION AND TANGENT MATRIX UPDATE
 !
@@ -1459,7 +1536,8 @@ end program reservoirSimulator
       subroutine InicializacaoGEO()
 !     
       use mGeomecanica
-      use mGlobaisEscalares, only: ndofD, NUMDX, NLVECTD, NNP
+      use mGlobaisEscalares, only:  NUMDX, NNP
+      use mGeomecanica, only: ndofD, nlvectD 
       use mGlobaisEscalares, only: TypeProcess
 !
       use mHidrodinamicaRT,  only: pressaoElem, vc
@@ -1472,9 +1550,8 @@ end program reservoirSimulator
       use mMalha,            only: conecNodaisElem
       use mMalha,            only: x, xc, numelReserv
 !
-      use mAlgMatricial,     only: idDesloc, IDIAGD, NALHSD
-      use mAlgMatricial,     only: ALHSD, BRHSD, CLHSD, NEQD
-      use mAlgMatricial,     only: LMD,  LOAD, FTOD, FACTOR
+      use mGeomecanica,     only: idDesloc, IDIAGD, NALHSD
+      use mGeomecanica,     only: ALHSD, BRHSD, NEQD,LMD
 !
 !..NEW LINES 4 COMPRESSIBLE MODEL MASS CONTENT ARRAYS
 !
@@ -1513,6 +1590,7 @@ end program reservoirSimulator
 !
       IF (NLVECTD.GT.0) &
          CALL FTOD(idDesloc,DIS,fDesloc,NDOFD,NUMNP,NLVECTD)
+         
 !
 !.... SETUP INITIAL HIDROSTATIC PRESSURE FIELD
 !
@@ -1526,8 +1604,8 @@ end program reservoirSimulator
 !
       subroutine alocarMemoria()
       use mGlobaisArranjos,  only: uTempoN, mat, grav, beta
-      use mGlobaisEscalares, only: ndofP, ndofV, ndofD
-      use mGlobaisEscalares, only: nlvectP, nlvectV, nlvectD
+      use mGeomecanica,      only: ndofD, nlvectD 
+      use mHidrodinamicaRT,  only: ndofV, nlvectV, nlvectP, ndofP 
       use mGlobaisEscalares, only: geomech, novaMalha
 !
       use mMalha,            only: nsd, numel, numelReserv, numnp
@@ -1537,16 +1615,15 @@ end program reservoirSimulator
       use mMalha,            only: listaDosElemsPorNo
       use mMalha,            only: listaDosElemsPorFace
       use mMalha,            only: conecNodaisElem, conecLadaisElem
-      use mAlgMatricial,     only: idVeloc, idDesloc, lmV, lmD
+      use mHidroDinamicaRT,  only: idVeloc, lmV
+      use mGeomecanica,      only: idDesloc, lmD
       use mTransporte,       only: satElemAnt, satElem
       use mTransporte,       only: satElemL, satElemL0, satElem0
       use mGeomecanica
       use mPropGeoFisica,    only: GEOFORM, MASCN, MASCN0, PHIEULER  
       use mHidrodinamicaRT,  only: pressaoElem, pressaoElemAnt,PRESPRODWELL,NCONDP
       use mHidrodinamicaRT,  only: vc, ve, velocLadal, fVeloc
-#ifdef withcrs
       use mSolverPardiso, only: listaDosElemsPorNoCRS
-#endif
 !
       implicit none
 !
@@ -1592,6 +1669,7 @@ end program reservoirSimulator
       listaDosElemsPorNo = 0
       allocate(listaDosElemsPorFace(numLadosElem,numLadosReserv))
       listaDosElemsPorFace = 0
+
 #ifdef withcrs
       if(novaMalha.eqv..true.) then
          allocate(listaDosElemsPorNoCRS(7,numnp))
@@ -1673,15 +1751,16 @@ end program reservoirSimulator
 !
       SUBroutine TOPologiaMALhaSistEQUAcoesDS(NALHSV,NEQV,NALHSD,NEQD)
       use mGlobaisEscalares
+      use mGeomecanica, only: ndofD, nlvectD, optSolverD, LMStencilGeo
+      use mHidrodinamicaRT, only: ndofV, nlvectV, nlvectP, ndofP , optSolverV, LMStencilVel
       use mGlobaisArranjos
       use mLeituraEscrita, only: iin, iecho, nprint, prntel
-      use mLeituraEscrita, only: GEOREGION_DS
+      use mLeituraEscritaSimHidroGeoMec, only: GEOREGION_DS 
 !
-      use mAlgMatricial,   only: lmV, idVeloc, idiagV, meanbwV, nedV
-      use mAlgMatricial,   only: LMD, IDIAGD,ALHSD, BRHSD, CLHSD
-      use mAlgMatricial,   only: colht, diag, IDDESLOC
-      use mAlgMatricial,   only: numCoefPorLinhaVel
-      use mAlgMatricial,   only: numCoefPorLinhaGeo
+      use mHidroDinamicaRT,only: lmV, idVeloc, idiagV, nedV, ApVel, AiVel
+      use mGeomecanica,    only: LMD, IDIAGD,ALHSD, BRHSD, CLHSD, IDDESLOC, ApGeo, AiGeo
+      use mHidroDinamicaRT,only: numCoefPorLinhaVel,  meanbwV
+      use mGeomecanica,    only: numCoefPorLinhaGeo
 !
       use mMalha,          only: IrregMesh
       use mMalha,          only: numel, numnp, nsd, nen
@@ -1710,7 +1789,7 @@ end program reservoirSimulator
 
       use mSolverHypre
 !
-      use mGeomecanica
+      use mGeomecanica, only: AUXM,IOPT,NED,NED2,NEE,NEE2,NEESQ,NEESQ2,NESD,NSTR
 !
       implicit none
 !
@@ -1832,9 +1911,9 @@ end program reservoirSimulator
 !
       call colht(idiagV,lmV,nedV,numLadosElem,numelReserv,neqV)
 !
-#ifndef withcrs
-      call diag(idiagV,neqV,nalhsV)
-#endif
+      if(optSolverV=='skyline') then
+         call diag(idiagV,neqV,nalhsV)
+      endif
 !
       meanbwV = nalhsV/neqV
       write(iecho,9000) neqV, nalhsV, meanbwV, 8.0*nalhsV/1000/1000
@@ -1867,75 +1946,64 @@ end program reservoirSimulator
 !
 !.... DETERMINE ADDRESSES OF DIAGONALS IN LEFT-HAND-SIDE MATRIX 
 !
-#ifndef withcrs
-      CALL DIAG(IDIAGD,NEQD,NALHSD)
-#endif
+      if(optSolverD=='skyline') then
+         CALL DIAG(IDIAGD,NEQD,NALHSD)
+      endif
 !
 !.... SETUP GEO-MECHANICAL REGIONS   
 !
       CALL GEOREGION_DS(XC,NUMEL)
 !
-     !Escolha do solver
-      optSolver='skyline'
-#ifdef withPardiso
-      optSolver='pardiso'
-      simetriaVel=.true. ! 0 para não simetrico ou 1 para simetrico
-      simetriaGeo=.true. ! 0 para não simetrico ou 1 para simetrico
-#endif
-#ifdef withHYPRE
-      optSolver='hypre'
-      simetriaVel=.false.
-      simetriaGeo=.false. 
-#endif
 
-      write(*,9001)  optSolver
-
-#ifdef withcrs
-      call timing(t1)
-      if(nsd==2) numCoefPorLinhaVel=7
-      if(nsd==3) numCoefPorLinhaVel=11
-      numConexoesPorElem=numLadosElem
-      call criarPonteirosMatEsparsa_CRS(nsd, ndofV, neqV, & 
-     &     numCoefPorLinhaVel, conecLadaisElem, & 
-     &     listaDosElemsPorFace, idVeloc, numLadosReserv, &
-     &     numLadosElem, numConexoesPorElem, nalhsV, & 
-     &     simetriaVel)
-!
-      call timing(t2)
-#ifdef mostrarTempos
-      write(*,9002) t2-t1 
-#endif
-!     
+      if(optSolverV=='pardiso'.or.optSolverV=='hypre') then
          call timing(t1)
-      if(geomech==1) then
-
-         if(novaMalha.eqv..true.) then
-            numCoefPorLinhaGeo=26
-            numConexoesPorElem=7
-            call criarPonteirosMatEsparsa_CRS(nsd, ndofD, neqD, &
-     &           numCoefPorLinhaGeo, conecNodaisElem, & 
-     &           listaDosElemsPorNoCRS, idDesloc, numnp, nen, & 
-     &           numConexoesPorElem, nalhsD, simetriaGeo)
-         else
-            numCoefPorLinhaGeo=18
-            numConexoesPorElem=4
-            call criarPonteirosMatEsparsa_CRS(nsd, ndofD, neqD, & 
-     &           numCoefPorLinhaGeo, conecNodaisElem, & 
-     &           listaDosElemsPorNo, idDesloc, numnp, nen, & 
-     &           numConexoesPorElem, nalhsD, simetriaGeo)
-
-         endif
-
+         if(nsd==2) numCoefPorLinhaVel=7
+         if(nsd==3) numCoefPorLinhaVel=11
+         numConexoesPorElem=numLadosElem
+         call criarPonteirosMatEsparsa_CRS(nsd, ndofV, neqV, & 
+     &        numCoefPorLinhaVel, conecLadaisElem, & 
+     &        listaDosElemsPorFace, idVeloc, LMStencilVel, ApVel, AiVel, numLadosReserv, &
+     &        numLadosElem, numConexoesPorElem, nalhsV, & 
+     &        simetriaVel)
+!
          call timing(t2)
 #ifdef mostrarTempos
-         write(*,9003) t2-t1
+         write(*,9002) t2-t1 
 #endif
-      endif
+     endif !if(optSolverV=='pardiso'.or.optSolverV=='hypre') then
+!     
+
+     if(optSolverD=='pardiso'.or.optSolverD=='hypre') then
+         call timing(t1)
+         if(geomech==1) then
+            if(novaMalha.eqv..true.) then
+               numCoefPorLinhaGeo=26
+               numConexoesPorElem=7
+               call criarPonteirosMatEsparsa_CRS(nsd, ndofD, neqD, &
+     &              numCoefPorLinhaGeo, conecNodaisElem, & 
+     &              listaDosElemsPorNoCRS, idDesloc, LMStencilGeo, ApGeo, AiGeo, numnp, nen, & 
+     &              numConexoesPorElem, nalhsD, simetriaGeo)
+            else
+               numCoefPorLinhaGeo=18
+               numConexoesPorElem=4
+               call criarPonteirosMatEsparsa_CRS(nsd, ndofD, neqD, & 
+     &              numCoefPorLinhaGeo, conecNodaisElem, & 
+     &              listaDosElemsPorNo, idDesloc, LMStencilGeo, ApGeo, AiGeo, numnp, nen, & 
+     &              numConexoesPorElem, nalhsD, simetriaGeo)
+
+            endif
+
+            call timing(t2)
+#ifdef mostrarTempos
+            write(*,9003) t2-t1
 #endif
+         endif
+     endif !if(optSolverD=='pardiso'.or.optSolverD=='hypre') then
+
 !
       print*, "NALHSV=", NALHSV, "NALHSD=", NALHSD
       
-      if(optSolver=="hypre") then
+      if(optSolverV=="hypre") then
       
          Clower_V = 1 - 1
          Cupper_V = neqV-1
@@ -1947,6 +2015,10 @@ end program reservoirSimulator
          call criarMatriz_HYPRE    (A_HYPRE_V, Clower_V, Cupper_V, mpi_comm )
          call criarVetor_HYPRE     (b_HYPRE_V, Clower_V, Cupper_V, mpi_comm )
          call criarVetor_HYPRE     (u_HYPRE_V, Clower_V, Cupper_V, mpi_comm )
+
+      endif
+
+      if(optSolverD=="hypre") then
       
          Clower_G = 1 - 1
          Cupper_G = neqD-1
@@ -1992,7 +2064,6 @@ end program reservoirSimulator
       ' number of terms in left-hand-side matrix  . (nalhs  ) = ',i12//5x,&
       ' mean half bandwidth . . . . . . . . . . . . (meanbw ) = ',i8//5x,&
       ' memoria necessaria para a matriz do sistema  (Mbytes)  = ',e10.2)
-9001  FORMAT("Solver para a solucao do sistema de equacoes: ",A7)
 9002  FORMAT( "Tempo de pre-processamento da Velocidade para solver externo",f12.5)
 9003  FORMAT( "Tempo de pre-processamento da Geomecanic para solver externo",f12.5)
 9500  FORMAT(5X,  &

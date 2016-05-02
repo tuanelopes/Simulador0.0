@@ -30,7 +30,8 @@
       use mPropGeoFisica,    only: dimx,dimy,dimz,nelx,nely,nelz, sinj
       use mMalha,            only: x, nsd, numnp, numnpReserv, numel, numelReserv, nen, numLadosElem
       use mMalha,            only: conecLadaisElem, conecNodaisElem, local, listaDosElemsPorFace
-      use mGlobaisEscalares, only: ndofV, tTransporte,dtBlocoTransp,nnp, SPLITT
+      use mGlobaisEscalares, only: tTransporte,dtBlocoTransp,nnp, SPLITT
+      use mHidrodinamicaRT, only: ndofV 
       use mGlobaisEscalares, only: tempoTotalTransporte
       use mPropGeoFisica,    only: iflag_prod, tprt_prod,np_rand_prod, dtprt_prod
       use mGlobaisArranjos,  only: grav
@@ -130,7 +131,7 @@
 !  
       subroutine maxder(nf,ndof,numel,dxmax,dymax,dzmax,dmax,phi,perm,v)
 !
-      use mGlobaisEscalares, only: NDOFD
+      use mGeomecanica, only: NDOFD
       use mMalha, only: conecLadaisElem,conecNodaisElem, nsd, local, numnp,nen, numLadosElem
 !
       implicit none     
@@ -266,12 +267,13 @@
            conecLadaisElem,listaDosElemsPorFace,dt,uf,&
            v,numLadosElem)
 !     
-        use mGlobaisEscalares, only: nRK, ordemRK, ndofV,ns,nvel,tTransporte,tempoNucTrans, ndofD, nnp
+        use mGlobaisEscalares, only: nRK, ordemRK, ns,nvel,tTransporte,tempoNucTrans, nnp
         use mGlobaisArranjos,  only: uTempoN, mat, c
-        use mLeituraEscrita,   only: prt,escreverArqParaviewIntermed,nprint,qtdImpSat
-        use mLeituraEscrita,   only: isatTransiente,paraview_escalarPorElementoTransiente
-        use mLeituraEscrita,   only: iflag_masl,iflag_sat,iflag_tipoPrint, isat
-        use mLeituraEscrita,   only: tprt_masl,dtprt_masl, tprt_sat,dtprt_sat
+        use mGeomecanica,      only: ndofD 
+        use mHidrodinamicaRT,  only: ndofV 
+        use mLeituraEscritaSimHidroGeoMec,   only: isatTransiente
+        use mLeituraEscritaSimHidroGeoMec,   only: iflag_masl,iflag_sat,isat
+        use mLeituraEscritaSimHidroGeoMec,   only: tprt_masl,dtprt_masl, tprt_sat,dtprt_sat
         use mMalha,            only: numLadosReserv, xc, x, numelReserv
         use mPropGeoFisica
         use mGeomecanica,      only: VDP, NED2, GEOTIME
@@ -311,7 +313,6 @@
         print*, "calculando saturacao com rk=", ordemRK
 !
         z=0.d0
-        qtdImpSat =0
 !
         if (allocated(du) .eqv. .false.) allocate(du(nsd,numelReserv))
         du = 0.0d0
@@ -410,12 +411,13 @@
            conecLadaisElem,listaDosElemsPorFace,dt,uf,&
            v,numLadosElem)
 !     
-        use mGlobaisEscalares, only: nRK, ordemRK, ndofV,ns,nvel,tTransporte,tempoNucTrans, ndofD, nnp
+        use mGlobaisEscalares, only: nRK, ordemRK, ns,nvel,tTransporte,tempoNucTrans,nnp
         use mGlobaisArranjos,  only: uTempoN, mat, c
-        use mLeituraEscrita,   only: prt,escreverArqParaviewIntermed,nprint,qtdImpSat
-        use mLeituraEscrita,   only: isatTransiente,paraview_escalarPorElementoTransiente
-        use mLeituraEscrita,   only: iflag_masl,iflag_sat,iflag_tipoPrint, isat
-        use mLeituraEscrita,   only: tprt_masl,dtprt_masl, tprt_sat,dtprt_sat
+        use mGeomecanica, only: ndofD 
+        use mHidrodinamicaRT, only: ndofV 
+        use mLeituraEscritaSimHidroGeoMec,   only: isatTransiente
+        use mLeituraEscritaSimHidroGeoMec,   only: iflag_masl,iflag_sat,isat
+        use mLeituraEscritaSimHidroGeoMec,   only: tprt_masl,dtprt_masl, tprt_sat,dtprt_sat
         use mMalha,            only: numLadosReserv, xc, x, numelReserv
         use mPropGeoFisica
         use mGeomecanica,      only: VDP, NED2, GEOTIME
@@ -459,7 +461,6 @@
         print*, "calculando saturacao com rk=", ordemRK
 
         z=0.d0
-        qtdImpSat =0
 !
         if (allocated(du) .eqv. .false.) allocate(du(nsd,numelReserv))
         du = 0.0d0
@@ -698,7 +699,7 @@
 
          subroutine vizinhanca(uel,vel,unb,xkb,p,pc,numLadosElem)
 
-         use mGlobaisEscalares, only: NDOFD
+         use mGeomecanica, only: NDOFD
          use mGeomecanica,      only: VDP, NED2
          use mMalha,            only: local, numelReserv, conecNodaisElem
          use mMalha,            only: conecLadaisElem, listaDosElemsPorFace
@@ -1220,7 +1221,7 @@
      &     conecLadaisElem,listaDosElemsPorFace,dt,&
      &     uf,du, inicio, fim)
 !
-       use mLeituraEscrita
+       use mLeituraEscritaSimHidroGeoMec
        use mPropGeoFisica, only: hx, hy, hz
        use mMalha, only: xc, numLadosElem,conecNodaisElem
 !
@@ -1259,7 +1260,7 @@
 
         subroutine vizinhanca(fluxo,uel,vel,unb,xkb,p,pc,numLadosElem)
 !
-          use mGlobaisEscalares, only: NDOFD
+          use mGeomecanica, only: NDOFD
           use mGeomecanica,      only: VDP, NED2
           use mMalha,            only: local, numelReserv
 !
@@ -2269,7 +2270,7 @@
 !
 !...  obs: atraves da fracao de volumes da fase: phi_alpha = phi*S_alpha
 !
-       use mLeituraEscrita
+       use mLeituraEscritaSimHidroGeoMec
        use mPropGeoFisica, only: hx, hy, hz
 !
        implicit none
@@ -2299,12 +2300,13 @@
             conecLadaisElem,listaDosElemsPorFace,dt,uf,&
             v,numLadosElem)
 !     
-         use mGlobaisEscalares, only: nRK, ordemRK, ndofV,ns,nvel,tTransporte,tempoNucTrans, ndofD, nnp
+         use mGlobaisEscalares, only: nRK, ordemRK, ns,nvel,tTransporte,tempoNucTrans,nnp
          use mGlobaisArranjos,  only: uTempoN, mat, c
-         use mLeituraEscrita,   only: prt,escreverArqParaviewIntermed,nprint,qtdImpSat
-         use mLeituraEscrita,   only: isatTransiente,paraview_escalarPorElementoTransiente
-         use mLeituraEscrita,   only: iflag_masl,iflag_sat,iflag_tipoPrint, isat
-         use mLeituraEscrita,   only: tprt_masl,dtprt_masl, tprt_sat,dtprt_sat
+         use mGeomecanica, only: ndofD 
+         use mHidrodinamicaRT, only: ndofV 
+         use mLeituraEscritaSimHidroGeoMec,   only: isatTransiente
+         use mLeituraEscritaSimHidroGeoMec,   only: iflag_masl,iflag_sat,isat
+         use mLeituraEscritaSimHidroGeoMec,   only: tprt_masl,dtprt_masl, tprt_sat,dtprt_sat
          use mMalha,            only: numLadosReserv, xc, x, numelReserv
          use mPropGeoFisica
          use mGeomecanica,      only: VDP, NED2, GEOTIME
@@ -2341,7 +2343,6 @@
          print*, "calculando saturacao com rk=", ordemRK
 !
          z=0.d0
-         qtdImpSat =0
 !
          if (allocated(du) .eqv. .false.) allocate(du(nsd,numelReserv))
          du = 0.0d0

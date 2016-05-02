@@ -1,23 +1,18 @@
   module mSolverPardiso
 
-        integer, allocatable :: AiVel(:), ApVel(:), AiGeo(:), ApGeo(:)
-        integer, allocatable :: LMstencilEqVel(:,:), LMstencilEqGeo(:,:)
-
         integer, allocatable :: listaDosElemsPorNoCRS(:,:)
-
-        INTEGER ptV(64), iparmV(64), ptG(64), iparmG(64)
-        REAL*8  dparmV(64), dparmG(64)
 
         integer :: posPonteiro, contPonteiro, posColunas, posCoef
         integer :: lda, nonzeros, nonzerosEst
-        logical :: primeiravezVel, primeiravezGeo
 
       contains
 !
 !=======================================================================
 !    
-      subroutine solverPardisoEsparso(alhs, b, Ap, Ai, neq, nonzeros, simetria, label,parte)
+      subroutine solverPardisoEsparso(alhs, b, Ap, Ai, pt_, iparm_, dparm_, neq, nonzeros, &
+     &                                            simetria, label,parte)
 
+      
       implicit none 
 !
       real*8  :: alhs(*), b(neq)
@@ -26,20 +21,22 @@
       logical, intent(in) :: simetria
       character(LEN=3) :: label
       character(LEN=4) :: parte
+      INTEGER pt_(64), iparm_(64)
+      REAL*8  dparm_(64)
 ! 
       real*8, allocatable  :: xGeo(:), xVel(:)
 
       if(label=='vel') then
          if(.not.allocated(xVel)) allocate(xVel(neq))
          xVel=0.d0
-         call solverPardisoPPD(Ap, Ai, ptV, iparmV, dparmV, alhs, xVel, b, neq, nonzeros, simetria, label,parte)
+         call solverPardisoPPD(Ap, Ai, pt_, iparm_, dparm_, alhs, xVel, b, neq, nonzeros, simetria, label,parte)
       endif
 
       
       if(label=='geo') then
          if(.not.allocated(xGeo)) allocate(xGeo(neq))
          xGeo=0.d0
-         call solverPardisoPPD(Ap, Ai, ptG, iparmG, dparmG, alhs, xGeo, b, neq, nonzeros, simetria, label,parte)
+         call solverPardisoPPD(Ap, Ai, pt_, iparm_, dparm_, alhs, xGeo, b, neq, nonzeros, simetria, label,parte)
       endif   
            
 
@@ -178,11 +175,14 @@
 !.. Back substitution and iterative refinement
          WRITE(*,*) 'Begining backsubstitution  ... '
          call timing(t1)
-         iparm_(8)  = 1   ! max numbers of iterative refinement steps
+         iparm_(8) = 1   ! max numbers of iterative refinement steps
          phase     = 33  ! only solve
+         iparm_(6) = 1 
          CALL pardiso (pt_, maxfct, mnum, mtype, phase, neq, a, ia, ja, &
                    idum, nrhs, iparm_, msglvl, b, x, error, dparm_) 
          call timing(t2)
+         
+         
 ! #ifdef mostrarTempos
 !       write(*,*) "backsubstitution: ",label, ", tempo = ", t2 - t1
 ! #endif
@@ -229,7 +229,7 @@
 !       write(*,*) "memory desalocation: ", label, ", tempo = ", t2 - t1
 ! #endif
 
-      b(1:neq) = x(1:neq)
+!       b(1:neq) = x(1:neq)
 
       endif !if(parte=='back'.or. parte=='full') then
 
@@ -240,10 +240,8 @@
 !=======================================================================
 !    
       subroutine criarPonteirosMatEsparsa_CRS(nsd, ndof, neq, numCoefPorLinha,  &
-              conectsElem, listaDosElems, id, numConexoes, nen, numConexoesPorElem,  &
-              nonzeros, simetria)
-
-      use mGlobaisEscalares, only: optSolver
+              conectsElem, listaDosElems, id, LMstencilEq_, Ap_, Ai_, numConexoes,  &
+              nen, numConexoesPorElem, nonzeros, simetria)
 
       implicit none 
 !
@@ -252,35 +250,37 @@
       integer, intent(out) :: numCoefPorLinha
       integer :: conectsElem(nen,*), listaDosElems(numConexoesPorElem,*)
       integer :: id(ndof,*)
+      integer, allocatable :: LMstencilEq_(:,:), Ap_(:), Ai_(:)
+      
 !
        if(numCoefPorLinha==26.or.numCoefPorLinha==18) then
 !
-         if(.not.allocated(LMstencilEqGeo))allocate(LMstencilEqGeo(neq,numCoefPorLinha)); 
-         LMstencilEqGeo=0
+         if(.not.allocated(LMstencilEq_))allocate(LMstencilEq_(neq,numCoefPorLinha)); 
+         LMstencilEq_=0
 
-         call montarLmStencilGeo_CRS    (LMstencilEqGeo,listaDosElems, id, &
+         call montarLmStencilGeo_CRS    (LMstencilEq_,listaDosElems, id, &
                    conectsElem, numCoefPorLinha, ndof, numConexoes, nen, numConexoesPorElem, neq, simetria)
 
-         allocate(ApGeo(neq+1));    ApGeo=0  
-         call montarPonteiroAp_CRS(ApGeo, LMstencilEqGeo, numCoefPorLinha, neq, nonzeros)
+         allocate(Ap_(neq+1));    Ap_=0  
+         call montarPonteiroAp_CRS(Ap_, LMstencilEq_, numCoefPorLinha, neq, nonzeros)
 !
 
-         allocate(AiGeo(nonzeros)); AiGeo=0
-         call montarPonteiroAi_CRS(AiGeo, LMstencilEqGeo, numCoefPorLinha, neq, nonzeros)
+         allocate(Ai_(nonzeros)); Ai_=0
+         call montarPonteiroAi_CRS(Ai_, LMstencilEq_, numCoefPorLinha, neq, nonzeros)
 !
       else
 !
-         if(.not.allocated(LMstencilEqVel))allocate(LMstencilEqVel(neq,numCoefPorLinha))
-         LMstencilEqVel=0
+         if(.not.allocated(LMstencilEq_))allocate(LMstencilEq_(neq,numCoefPorLinha))
+         LMstencilEq_=0
 
-         call montarLmStencilVel_CRS    (LMstencilEqVel,listaDosElems, id, &
+         call montarLmStencilVel_CRS    (LMstencilEq_,listaDosElems, id, &
                    conectsElem, numCoefPorLinha, ndof, numConexoes, numConexoesPorElem, neq, simetria)
 !
-         allocate(ApVel(neq+1));    ApVel=0  
-         call montarPonteiroAp_CRS(ApVel, LMstencilEqVel, numCoefPorLinha, neq, nonzeros)
+         allocate(Ap_(neq+1));    Ap_=0  
+         call montarPonteiroAp_CRS(Ap_, LMstencilEq_, numCoefPorLinha, neq, nonzeros)
 !
-         allocate(AiVel(nonzeros)); AiVel=0
-         call montarPonteiroAi_CRS(AiVel, LMstencilEqVel, numCoefPorLinha, neq, nonzeros)
+         allocate(Ai_(nonzeros)); Ai_=0
+         call montarPonteiroAi_CRS(Ai_, LMstencilEq_, numCoefPorLinha, neq, nonzeros)
 !
       endif
 ! 
@@ -665,10 +665,8 @@
 !=======================================================================
 !    
       subroutine criarPonteirosMatEsparsa_CRS_MR(nsd, ndof, neq, numCoefPorLinha,  &
-              conectsElem, listaDosElems, id, numConexoes, numConexoesPorElem,  &
+              conectsElem, listaDosElems, id, LMstencilEq_, Ai_, Ap_, numConexoes, numConexoesPorElem,  &
               nonzeros, simetria)
-
-      use mGlobaisEscalares, only: optSolver
 
       implicit none 
 !
@@ -677,34 +675,35 @@
       integer, intent(out) :: numCoefPorLinha
       integer :: conectsElem(numConexoesPorElem,*), listaDosElems(numConexoesPorElem,*)
       integer :: id(ndof,*)
+      integer, allocatable :: LMstencilEq_(:,:), Ap_(:), Ai_(:)
 !
        if(numCoefPorLinha==18) then
 !
-         if(.not.allocated(LMstencilEqGeo))allocate(LMstencilEqGeo(neq,numCoefPorLinha)); 
-         LMstencilEqGeo=0
+         if(.not.allocated(LMstencilEq_))allocate(LMstencilEq_(neq,numCoefPorLinha)); 
+         LMstencilEq_=0
 
-         call montarLmStencilGeo_CRS    (LMstencilEqGeo,listaDosElems, id, &
+         call montarLmStencilGeo_CRS    (LMstencilEq_,listaDosElems, id, &
                    conectsElem, numCoefPorLinha, ndof, numConexoes, numConexoesPorElem, neq, simetria)
 
-         allocate(ApGeo(neq+1));    ApGeo=0  
-         call montarPonteiroAp_CRS(ApGeo, LMstencilEqGeo, numCoefPorLinha, neq, nonzeros)
+         allocate(Ap_(neq+1));    Ap_=0  
+         call montarPonteiroAp_CRS(Ap_, LMstencilEq_, numCoefPorLinha, neq, nonzeros)
 !
-         allocate(AiGeo(nonzeros)); AiGeo=0
-         call montarPonteiroAi_CRS(AiGeo, LMstencilEqGeo, numCoefPorLinha, neq, nonzeros)
+         allocate(Ai_(nonzeros)); Ai_=0
+         call montarPonteiroAi_CRS(Ai_, LMstencilEq_, numCoefPorLinha, neq, nonzeros)
 !
       else
 !
-         if(.not.allocated(LMstencilEqVel))allocate(LMstencilEqVel(neq,numCoefPorLinha))
-         LMstencilEqVel=0
+         if(.not.allocated(LMstencilEq_))allocate(LMstencilEq_(neq,numCoefPorLinha))
+         LMstencilEq_=0
 
-         call montarLmStencilVel_CRS    (LMstencilEqVel,listaDosElems, id, &
+         call montarLmStencilVel_CRS    (LMstencilEq_,listaDosElems, id, &
                    conectsElem, numCoefPorLinha, ndof, numConexoes, numConexoesPorElem, neq, simetria)
 
-         allocate(ApVel(neq+1));    ApVel=0  
-         call montarPonteiroAp_CRS(ApVel, LMstencilEqVel, numCoefPorLinha, neq, nonzeros)
+         allocate(Ap_(neq+1));    Ap_=0  
+         call montarPonteiroAp_CRS(Ap_, LMstencilEq_, numCoefPorLinha, neq, nonzeros)
 !
-         allocate(AiVel(nonzeros)); AiVel=0
-         call montarPonteiroAi_CRS(AiVel, LMstencilEqVel, numCoefPorLinha, neq, nonzeros)
+         allocate(Ai_(nonzeros)); Ai_=0
+         call montarPonteiroAi_CRS(Ai_, LMstencilEq_, numCoefPorLinha, neq, nonzeros)
 !
       endif
 ! 

@@ -516,7 +516,6 @@
       end  subroutine          
 !**** new **********************************************************************
       subroutine multab(a,b,c,ma,mb,mc,l,m,n,iopt)
-      use mAlgMatricial, only: coldot, rowdot
 !
 !.... program to multiply two matrices
 !
@@ -530,6 +529,8 @@
 !                                                                       
       real*8  :: a(ma,*),b(mb,*),c(mc,*)
       integer :: ma,mb,mc,l,m,n,iopt
+      
+      real*8, external :: coldot, rowdot
 !
       integer :: i,j
 !

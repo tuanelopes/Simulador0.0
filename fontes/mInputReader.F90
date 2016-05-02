@@ -481,12 +481,11 @@ module mInputReader
     !! @param keyword       A palavra-chave a ser encontrada.
     !! @param target        Variavel onde a string sera atribuido.
     !! @param default_value Valor default.
-    subroutine readStringKeywordValue(keyword, value, tamanho, ierr)
+    subroutine readStringKeywordValue(keyword, value,  ierr)
         implicit none
         character(50) keyword
         character(120) file_line
-        integer :: tamanho
-        character(len=tamanho) :: value
+        character(len=*) :: value
         integer*4 keyword_line
         integer :: ierr
 !
@@ -521,6 +520,9 @@ module mInputReader
          end if
         file_line = adjustL(trim(file_lines(keyword_line)))
         read(file_line, *) target
+        
+!         print*, keyword
+!         print*, target
         return
     end subroutine readRealKeywordValue !****************************************************************************
 

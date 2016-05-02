@@ -14,18 +14,32 @@
 !
       implicit none
 !
+      integer :: ndofV, ndofP, nlvectV, nlvectP
       real*8,  allocatable :: pressaoElem(:,:),  pressaoElemAnt(:)
       real*8,  allocatable :: velocLadal(:,:), fVeloc(:,:)
       real*8,  allocatable :: vc(:,:), ve(:,:,:)
       REAL(8), ALLOCATABLE :: PRESPRODWELL(:)
+      
+      integer              :: neqV, nalhsV, nedV
+      real*8,  allocatable :: alhsV(:), brhsV(:)
+      integer, allocatable :: idVeloc(:,:)
+      integer, allocatable :: idiagV(:)
+      integer, allocatable :: lmV(:,:,:)
+      integer :: numCoefPorLinhaVel, meanbwV
+      character(len=7) :: optSolverV
+      integer, allocatable :: AiVel(:), ApVel(:), LMstencilVel(:,:)
+      INTEGER ptV(64), iparmV(64)
+      REAL*8  dparmV(64)
+
 
       
       REAL(8) :: COTAREF, PRESSAOREF
       REAL(8) :: TPRESPRODWELL,PRESMEDIAINICIAL,PRESPROD
       REAL(8) :: ZFUNDOPOCCO
+!
       INTEGER :: NPRESPRODWELL,NCONDP
       REAL(8), DIMENSION(2,100) :: PCONDP
-
+      INTEGER, DIMENSION(100)   :: ELEM_CONDP
 !     
       public  :: hidroGeomecanicaRT
       private :: montarMatrizVelocidadeRT,  limparSistEqAlgVelocidade
@@ -40,14 +54,11 @@
       subroutine hidroGeomecanicaRT(satElemL,satElemL0,SIGMAT,& 
      &           SIGMA0,TIMEINJ)
 !
-      use mAlgMatricial,     only : neqV, nAlhsV, alhsV, brhsV
-      use mAlgMatricial,     only : idiagV, idVeloc, btod
-      use mAlgMatricial,     only : numCoefPorLinhaVel
       use mGlobaisArranjos,  only : mat, c, beta
-      use mGlobaisEscalares, only : optSolver, simetriaVel
+      use mGlobaisEscalares, only : simetriaVel
       use mGlobaisEscalares, only : tempoSolverVel,tempoMontagemVel,tempoTotalPressao
       use mGlobaisEscalares, only : dtBlocoTransp, tTransporte
-      use mGlobaisEscalares, only : ndofV, nvel, nnp
+      use mGlobaisEscalares, only : nvel, nnp
       use mMalha,            only : conecNodaisElem, conecLadaisElem
       use mMalha,            only : numel, numelReserv, nsd, nen
       use mMalha,            only : x, xc,numLadosReserv, numLadosElem
@@ -55,7 +66,7 @@
       use mPropGeoFisica,    only : phi, phi0, nelx, nely, nelz
       use mPropGeoFisica,    only : calcphi, hx, hy
       use mPropGeoFisica,    only : permkx, xkkc, xltGeo
-      use mSolverPardiso, only : ApVel, AiVel, solverPardisoEsparso
+      use mSolverPardiso,    only : solverPardisoEsparso
       
       use mSolverGaussSkyline, only : solverGaussSkyline
       use mSolverHypre
@@ -107,18 +118,18 @@
 !
       write(*,'(a)', ADVANCE='NO') 'solucao do sistema de equacoes'
 !
-      if (optSolver=='pardiso') then
+      if (optSolverV=='pardiso') then
          write(*,'(a)') '   //========> solver direto PARDISO, VELOCITY'
-         call solverPardisoEsparso(alhsV, brhsV, ApVel, AiVel,neqV, &
-     &        nalhsV, simetriaVel, 'vel', 'full')
+         call solverPardisoEsparso(alhsV, brhsV, ApVel, AiVel, ptV, iparmV, dparmV,  &
+     &        neqV, nalhsV, simetriaVel, 'vel', 'full')
       end if
 !
-      if (optSolver=='skyline') then
+      if (optSolverV=='skyline') then
          write(*,'(a)') '   //========> solver direto SKYLINE, VELOCITY'
          call solverGaussSkyline(alhsV,brhsV,idiagV,nalhsV, neqV, 'full')
       end if
 !
-     if(optSolver=='hypre') then
+     if(optSolverV=='hypre') then
 
          write(*,'(a)') ', solver iterativo HYPRE, Hidrodinamic'
 
@@ -150,6 +161,9 @@
 
       endif!
       call btod(idVeloc,velocLadal,brhsV,ndofV,numLadosReserv)
+      write(*,*) "Valores nos extremos do vetor solucao Velocidade RT,  "
+      write(*,'(5e16.8)') brhsV(1     :5)
+      write(*,'(5e16.8)') brhsV(neqV-4: neqV)
 !
       call timing(t3)
 #ifdef mostrarTempos
@@ -179,7 +193,6 @@
 !**** new **********************************************************************
 !
       subroutine limparSistEqAlgVelocidade()
-      use mAlgMatricial,    only: alhsV, brhsV
 !   
          velocLadal  = 0.0d00
          if(allocated(brhsV))  brhsV = 0.0d00 
@@ -192,11 +205,7 @@
       subroutine montarSistEqAlgVelocidade(nsd,satElemL,satElemL0, & 
      &           PHI,PHI0,SIGMAT,SIGMA0,TIMEINJ)
 !
-      use mGlobaisEscalares,    only: nlvectV, ndofV
       use mGlobaisEscalares,    only: dtBlocoTransp, nnp, nvel
-      use mAlgMatricial,        only: load, ftod, alhsV, brhsV 
-      use mAlgMatricial,        only: LOADTIME, ftodTIME
-      use mAlgMatricial,        only: idiagV, idVeloc, lmV, neqV
       use mMalha,               only: x, conecNodaisElem
       use mMalha,               only: conecLadaisElem, numLadosElem
       use mMalha,               only: numLadosReserv, numelReserv, numel
@@ -232,9 +241,7 @@
      &           PHI, PHI0, SIGMAT, SIGMA0 ) 
 
         use mSolverGaussSkyline,only:addrhs, addlhs 
-        use mAlgMatricial,     only: kdbc, nALHSV
-        use mAlgMatricial,     only: neqV, idVeloc, nedV
-        use mGlobaisEscalares, only: ndofV, nrowsh, npint, nnp, optSolver
+        use mGlobaisEscalares, only: nrowsh, npint, nnp
         use mGlobaisEscalares, only: ligarBlocosHetBeta, iflag_beta
         use mGlobaisEscalares, only: geomech, S3DIM
         use mGlobaisArranjos,  only: grav, c, mat, beta
@@ -247,11 +254,11 @@
         use mPropGeoFisica,    only: xkkc,xkkcGeo,xlt,xltGeo, xlo, xlw
         use mPropGeoFisica,    only: perm, permkx, permky, permkz
         use mPropGeoFisica,    only: gf1, gf2, gf3, PWELL, rhow,rhoo 
-        use mSolverPardiso, only: addlhsCRS, ApVel, AiVel
+        use mSolverPardiso,    only: addlhsCRS
 !..4COMPRESSIBILITY:
         use mPropGeoFisica,    only: YOUNG, POISVECT, BULK,GRAINBLK 
         use mPropGeoFisica,    ONLY: BULKWATER, BULKOIL
-        USE mMCMC,             ONLY: ELEM_CONDP
+!        USE mMCMC,             ONLY: ELEM_CONDP
         use mPropGeoFisica,    only: hx,hy,hz
         use mSolverHypre
 !
@@ -555,13 +562,13 @@
 !
            lsym=.true.
 
-           if (optSolver=='skyline')   then
+           if (optSolverV=='skyline')   then
               call addlhs(alhs,elert,lmV(1,1,nel),idiagV,nee,diag,lsym) 
            endif   
-           if (optSolver=='pardiso')   then
+           if (optSolverV=='pardiso')   then
               call addlhsCRS(alhs,elert,lmV(1,1,nel),ApVel, AiVel,nee) 
            endif
-           if (optSolver=='hypre')   then
+           if (optSolverV=='hypre')   then
               call addnslHYPRE(A_HYPRE_V, elert, LMV(1,1,nel), nee, lsym)
            endif
 
@@ -571,7 +578,7 @@
 
 ! $OMP END PARALLEL
 
-      if (optSolver=='hypre')   then
+      if (optSolverV=='hypre')   then
        do i = 1, neqV
            rows_V(i) = i-1 
        end do
@@ -690,7 +697,7 @@
       use mMalha,            only: numnp, numel, numelReserv
       use mMalha,            only: nen, numLadosElem, numLadosReserv
       use mGlobaisArranjos,  only: c, mat, beta
-      use mGlobaisEscalares, only: ndofP, ndofV, nrowsh, iflag_beta
+      use mGlobaisEscalares, only: nrowsh, iflag_beta
       use mGlobaisEscalares, only: npint, ligarBlocosHetBeta
       use mGlobaisEscalares, only: geomech, S3DIM
       use mPropGeoFisica,    only: YOUNG, POISVECT, GRAINBLK, phi, BULK
@@ -909,7 +916,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE DIRICHLET_POCO_GRAVIDADE_APROX(BWP,NEL,HYY,NP,GRAVI,NELWELL,satElemL)
 !
-        use mMCMC,          only : ELEM_CONDP
+!        use mMCMC,          only : ELEM_CONDP
         use mPropGeoFisica, only : RHOW, RHOO
         use mMalha,         only : numelReserv
 !
@@ -932,7 +939,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE DIRICHLET_POCO_GRAVIDADE_OLD(BHP,NEL,HYY,NP,GRAVI,NELWELL,satElemL)
 !
-        use mMCMC,             only : ELEM_CONDP
+!        use mMCMC,             only : ELEM_CONDP
         use mPropGeoFisica,    only : RHOW, RHOO, BULKWATER, BULKOIL
         use mMalha,            only : xc,numelReserv
 !
@@ -966,7 +973,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE DIRICHLET_POCO_GRAVIDADE(BHP,NEL,HYY,NP,GRAVI,NELWELL,satElemL)
 !
-        use mMCMC,             only : ELEM_CONDP
+!        use mMCMC,             only : ELEM_CONDP
         use mPropGeoFisica,    only : RHOW, RHOO, BULKWATER, BULKOIL
         use mPropGeoFisica,    only : xlw,xlo,XLT
         use mMalha,            only : xc,numelReserv
