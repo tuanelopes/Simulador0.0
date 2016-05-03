@@ -60,8 +60,8 @@ OUTROSF="-DmostrarTempos        "
 
 if [ "$FC" = "ifort" ]; then 
    ARGINC="-w -module include";
-   COMP="-openmp  -DwithOMP"
-   LOMP="-openmp"
+   COMP="-qopenmp  -DwithOMP"
+   LOMP="-qopenmp"
 fi
 
 if [ "$FC" = "gfortran" ]; then
@@ -152,7 +152,7 @@ if [ "$solver" = "HYPRE" ]; then
   fi
   HYPRELNK="-L${HYPRE_DIR}/lib -lHYPRE " 
   HYPRE_INC="${HYPRE_DIR}/include/"
-  ppSolver="-DwithHYPRE"; 
+  ppSolver="-DwithHYPRE -Dwithcrs $COMP"; 
   LIBS="${HYPRELNK}"; 
 fi
 
