@@ -2,7 +2,7 @@ opcaoA=${1:-"1"}
 opcaoB=${2:-"1"}
 opcaoC=${3:-"1"}
 
-     listaSolvers=(zero Gauss Pardiso HYPRE G+P G+H P+H)
+     listaSolvers=(zero Gauss Pardiso HYPRE P+H)
 listaCompiladores=(zero gfortran ifort) # pgf90)
      listaOPTIMIZ=(zero "-g -O0" "-O4" "-fast")
 
@@ -60,8 +60,8 @@ OUTROSF="-DmostrarTempos        "
 
 if [ "$FC" = "ifort" ]; then 
    ARGINC="-w -module include";
-   COMP="-qopenmp  -DwithOMP"
-   LOMP="-qopenmp"
+   COMP="-openmp  -DwithOMP"
+   LOMP="-openmp"
 fi
 
 if [ "$FC" = "gfortran" ]; then
@@ -70,42 +70,41 @@ if [ "$FC" = "gfortran" ]; then
    LOMP="-fopenmp"
 fi
 
-if [ "$maquina" = "petropolis.apos3.lncc.br" ]; then
-   HYPRE_DIR="/usr/local/hypre2.9" # em petropolis
-   PARDISO_DIR="/usr/local/pardiso"
+case $maquina in
+"petropolis.apos3.lncc.br")
+    PARDISO_DIR="/usr/local/pardiso"
+    HYPRE_DIR="/usr/local/hypre2.9" # em petropolis
+;;
 
-  #FC=${listaCompiladores[1]} # gfortran
-fi
-
-if [ "$maquina" = "bidu-debian" ]; then
-   HYPRE_DIR="/usr/local/hypre/src/hypre/"
-   #FC=${listaCompiladores[1]} # gfortran
-fi
-
-
+"bidu-debian" )
+    HYPRE_DIR="/usr/local/hypre-2.10.1/"
+    PARDISO_DIR="/usr/local/lib/pardiso5.0/"
+    export PARDISO_LIC_PATH=/usr/local/lib/pardiso5.0/
+    export  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/pardiso5.0/
+;;
 # /hpc/pardiso5.0
 #Architecture X86-64, 64-bit, icc/ifort 13.01 libpardiso500-INTEL1301-X86-64.so
 #Architecture X86-64, 64-bit, gcc/gfortran 4.7.2 libpardiso500-GNU472-X86-64.so
 
 #Architecture X86-64, 64-bit, icc/ifort 13.01     Linux MPI libpardiso500-MPI-INTEL1301-X86-64.so
 #Architecture X86-64, 64-bit, mpicc/mpif77 4.7.2     Linux MPI libpardiso500-MPI-GNU472-X86-64.so
-if [ "$maquina" = "altix-xe.hpc.lncc.br" ]; then
+"altix-xe.hpc.lncc.br")
+    PARDISO_DIR="/hpc/pardiso5.0"
    if [ "$FC" = "gfortran" ]; then
       comando="source /hpc/modulos/bash/gcc-4.7.sh";       echo +++ $comando; eval $comando
       comando="source /hpc/modulos/bash/hypre-2.9.0b.sh";  echo +++ $comando; eval $comando
       comando="source /hpc/modulos/bash/openmpi-gcc44-1.4.1.sh ";   echo +++ $comando; eval $comando
       HYPRE_DIR="/hpc/hypre-2.9.0b"         # altix-xe, gcc
-      PARDISO_DIR="/hpc/pardiso5.0"
    fi
    if [ "$FC" = "ifort" ]; then
       comando="source /hpc/modulos/bash/intel-cluster_studio_xe_2013.sh"; echo $comando; eval $comando
       comando="source /hpc/modulos/bash/hypre-2.9.0b-intel.sh";           echo $comando; eval $comando
       HYPRE_DIR="/hpc/hypre-2.9.0b-intel"   # altix-xe, intel
-      PARDISO_DIR="/hpc/pardiso5.0"
    fi
-fi
+;;
 
-if [ "$maquina" = "no41.hpc.lncc.br" ]; then
+"no41.hpc.lncc.br")
+     PARDISO_DIR="/hpc/pardiso5.0"
   if [ "$FC" = "gfortran" ]; then
      comando="source /hpc/modulos/bash/gcc-4.7.sh";          echo $comando; eval $comando
      comando="source /hpc/modulos/bash/hypre-2.9.0b-k20.sh"; echo $comando; eval $comando
@@ -116,13 +115,18 @@ if [ "$maquina" = "no41.hpc.lncc.br" ]; then
      comando="source /hpc/modulos/bash/hypre-2.9.0b-intel-k20.sh";       echo $comando; eval $comando
      HYPRE_DIR="/hpc/hypre-2.9.0b-intel-k20"  # k20, intel 
   fi
-fi
+;;
+*)
+  echo "..... erro .... em rodarExperimento.sh" 
+  exit;;
+esac
 
-if [ "$solver" = "Gauss" ]; then
+case $solver in
+"Gauss" )
    ppSolver="-DSkyline"; LIBS="" ;  
-fi
+;;
 
-if [ "$solver" = "Pardiso" ]; then
+"Pardiso")
   if [ "$FC" = "gfortran" ]; then
     FC=gfortran
     comando="export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/hpc/pardiso5.0/"; eval $comando
@@ -131,7 +135,6 @@ if [ "$solver" = "Pardiso" ]; then
   fi
   if [ "$FC" = "ifort" ]; then
     FC=ifort
-
     if [ "$LIBPARDISO" = "MKL" ]; then
        PARDISOLNK="-mkl"; 
     else
@@ -139,87 +142,61 @@ if [ "$solver" = "Pardiso" ]; then
        PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-INTEL1301-X86-64     -lblas -llapack -fopenmp -lpthread -lm" 
     fi
   fi
-   ppSolver="-DwithPardiso -Dwithcrs $COMP ";  
+   comando="LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PARDISO_DIR}"; eval $comando
+   ppSolver="-DwithPardiso -Dwithcrs -DSkyline  $COMP ";  
    LIBS="${PARDISOLNK}"; 
-fi
+;;
 
-if [ "$solver" = "HYPRE" ]; then
+"HYPRE")
   if [ "$FC" = "gfortran" ]; then
     FC=mpif90
   fi
   if [ "$FC" = "ifort" ]; then
     FC=mpiifort
   fi
-  HYPRELNK="-L${HYPRE_DIR}/lib -lHYPRE " 
-  HYPRE_INC="${HYPRE_DIR}/include/"
   ppSolver="-DwithHYPRE -Dwithcrs $COMP"; 
+  HYPRELNK="-L${HYPRE_DIR}/lib -lHYPRE " 
+  HYPRE_INC="${HYPRE_DIR}/include/"
   LIBS="${HYPRELNK}"; 
-fi
+  comando="LD_LIBRARY_PATH=$LD_LIBRARY_PATH::${HYPRE_DIR}"; eval $comando
+;;
 
-if [ "$solver" = "P+H" ]; then
-  ppSolver=" -DwithHYPRE -DwithPardiso -Dwithcrs $COMP";
+"P+H")
+  ppSolver="-DwithHYPRE -DwithPardiso -Dwithcrs $COMP";
   HYPRELNK="-L${HYPRE_DIR}/lib -lHYPRE " 
   HYPRE_INC="${HYPRE_DIR}/include/"
   if [ "$FC" = "gfortran" ]; then
     FC=mpif90
-    LIBS="${HYPRELNK} "; 
+    PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-GNU472-X86-64     -lblas -llapack -fopenmp -lpthread -lm"
+    LIBS="${HYPRELNK} ${PARDISOLNK} "; 
   fi
   if [ "$FC" = "ifort" ]; then
     FC=mpiifort
+    PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-INTEL1301-X86-64     -lblas -llapack -fopenmp -lpthread -lm"
     LIBS="${HYPRELNK} -mkl"; 
   fi
-fi
 
-
-if [ "$solver" = "G+H" ]; then
-  ppSolver=" -DwithHYPRE -Dwithcrs -DSkyline $COMP";
-  HYPRELNK="-L${HYPRE_DIR}/lib -lHYPRE "
-  HYPRE_INC="${HYPRE_DIR}/include/"
-  if [ "$FC" = "gfortran" ]; then
-    FC=mpif90
-    LIBS="${HYPRELNK} ";
-  fi
-  if [ "$FC" = "ifort" ]; then
-    FC=mpiifort
-    LIBS="${HYPRELNK} ";
-  fi
-fi
-
-
-if [ "$solver" = "G+P" ]; then
-  if [ "$FC" = "gfortran" ]; then
-    FC=gfortran
-    comando="export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/hpc/pardiso5.0/"; eval $comando
-    PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-MPI-GNU472-X86-64 -lblas -llapack -fopenmp -lpthread -lm"
-    PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-GNU472-X86-64     -lblas -llapack -fopenmp -lpthread -lm"
-  fi
-  if [ "$FC" = "ifort" ]; then
-    FC=ifort
-
-    if [ "$LIBPARDISO" = "MKL" ]; then
+  if [ "$LIBPARDISO" = "MKL" ]; then
        PARDISOLNK="-mkl";
-    else
+  else
        PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-MPI-INTEL1301-X86-64 -lblas -llapack -fopenmp -lpthread -lm"
-       PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-INTEL1301-X86-64     -lblas -llapack -fopenmp -lpthread -lm"
-    fi
   fi
-   ppSolver="-DwithPardiso -Dwithcrs -DSkyline $COMP ";
-   LIBS="${PARDISOLNK}";
-fi
+   ppSolver="-DwithHYPRE -DwithPardiso -Dwithcrs -DSkyline $COMP ";
+   comando="LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PARDISO_DIR}:${HYPRE_DIR}"; eval $comando
+;;
+*)
+  echo "...erro na escolha do solver....em rodarExperimento.sh" 
+  exit;;
+esac
 
-
-
-
-
-
-
-
-
-
-echo +++  $maquina $FC $solver $ppSolver $ARGINC $COMP $LOMP
+#echo +++  maquina FC solver ppSolver ARGINC COMP LOMP LIBS
 comando="($FC --version)"; echo $comando; eval $comando
 
+if [ $# == 0 ]; then
 nomeExecutavel=simulador${simulador}.exe
+else 
+nomeExecutavel=simulador${simulador}${sufixoExec}.exe
+fi
 #echo "+++ digite Enter para gerar o executavel: $nomeExecutavel "
 #read
 comando="rm -rf $dirBin/$nomeExecutavel"
@@ -257,7 +234,7 @@ echo +++ executavel criado
 ls -ltr ${dirBin}/${nomeExecutavel}
 echo +++
 
-rm $dirBin/*.o
+#rm $dirBin/*.o include/*
 
 #echo +++
 #comando="./rodarExperimento.sh  $opcaoA $opcaoB $opcaoC exp05x02_DS"

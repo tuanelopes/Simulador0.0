@@ -98,9 +98,9 @@
     !  call HYPRE_IJMatrixPrint( A_, nomeA, ierr)
       !end block
       write(*,*) "em subroutine resolverSistemaAlgHYPRE  (A_, parcsr_A_, b_, par_b_, "
-      write(*,'(a,7i15)')  "s+++, ", A_, parcsr_A_, b_, par_b_, u_, par_u_, solver_
-      write(*,'(3(a,i0))') "s+++, em resolverSistemaAlgHYPRE, myid= ", myid,", &
-                    numprocs= ", num_procs,", mpi_comm= ", mpi_comm
+!      write(*,'(a,7i15)')  "s+++, ", A_, parcsr_A_, b_, par_b_, u_, par_u_, solver_
+!      write(*,'(3(a,i0))') "s+++, em resolverSistemaAlgHYPRE, myid= ", myid,", &
+!                    numprocs= ", num_procs,", mpi_comm= ", mpi_comm
       local_size = neq_
       printLevel = 0
 #ifdef withHYPRE
@@ -664,7 +664,7 @@
       call HYPRE_IJVectorSetObjectType (v_, HYPRE_PARCSR, ierr)
       call HYPRE_IJVectorInitialize    (v_, ierr)
 #endif
-      write(*,'(a,i10)') "cV+++, ", v_
+!      write(*,'(a,i10)') "cV+++, ", v_
       end subroutine criarVetor_HYPRE
 !=============================================================================
       subroutine criarMatriz_HYPRE(M_, Clower_, Cupper_,  mpi_comm_)
@@ -673,7 +673,7 @@
       integer * 4, intent(in)  :: mpi_comm_
       integer, parameter ::  HYPRE_PARCSR=5555
       integer :: ierr 
-      write(*,*) " cM+++ , Clower_= ", Clower_, ", Cupper_ " , Cupper_
+!      write(*,*) " cM+++ , Clower_= ", Clower_, ", Cupper_ " , Cupper_
 #ifdef withHYPRE
       A_=-9
 !     Create the matrix.
@@ -686,7 +686,7 @@
 !     Initialize before setting coefficients
       call HYPRE_IJMatrixInitialize    (M_, ierr)
 #endif
-       write(*,'(7(a,i0))') "cM+++, ", M_ , ", Clower_= ", Clower_, ",  Cupper_=" , Cupper_
+!       write(*,'(7(a,i0))') "cM+++, ", M_ , ", Clower_= ", Clower_, ",  Cupper_=" , Cupper_
       if(A_==0) then
         write(*,*) " em subroutine criarMatriz_HYPRE, erro, M_ = ", M_
         stop
@@ -718,7 +718,7 @@
 !      Get parcsr matrix object
        call HYPRE_IJMatrixGetObject( A_, parcsr_A_, ierr)
 #endif
-      write(*,'(2(a,i0))') "fM+++, A_ ", A_, ", parcsr_A_ =", parcsr_A_
+!      write(*,'(2(a,i0))') "fM+++, A_ ", A_, ", parcsr_A_ =", parcsr_A_
       end subroutine fecharMatriz_HYPRE
 
 ! !=============================================================================
@@ -745,14 +745,14 @@
 !      Get parcsr vector object
        call HYPRE_IJVectorGetObject (v_, par_v_, ierr)
 #endif
-       write(*,'(2(a,i0))') "fV+++, v_ ", v_, ", par_v =", par_v_
+!       write(*,'(2(a,i0))') "fV+++, v_ ", v_, ", par_v =", par_v_
 end subroutine fecharVetor_HYPRE
 !=============================================================================
 !=============================================================================
       subroutine destruirVetor_HYPRE   ( v_)
       integer*8 , intent(in) ::  v_
       integer*4 ::  ierr  
-      write(*,'(a,i0)') "dV+++, v=",  v_ 
+!      write(*,'(a,i0)') "dV+++, v=",  v_ 
 #ifdef withHYPRE
          call HYPRE_IJVectorDestroy(v_, ierr)
 #endif
@@ -762,7 +762,7 @@ end subroutine fecharVetor_HYPRE
       integer*8 , intent(inout) :: M_
       integer*4 ::  ierr  
 !      write(*,*) " ++, em destruirMatriz_HYPRE   (M_)"
-       write(*,'(a,i0)') "dM+++, ", M__ 
+!       write(*,'(a,i0)') "dM+++, ", M__ 
 #ifdef withHYPRE
          call HYPRE_IJMatrixDestroy(M_, ierr)
 #endif

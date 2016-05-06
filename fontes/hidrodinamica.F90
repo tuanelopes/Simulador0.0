@@ -116,22 +116,22 @@
 #endif
       tempoMontagemVel=tempoMontagemVel+(t2-t1)
 !
-      write(*,'(a)', ADVANCE='NO') 'solucao do sistema de equacoes'
+      write(*,'(a)', ADVANCE='NO') 'solucao do sistema de eq, VELOCITY, '
+!
+      if (optSolverV=='skyline') then
+         write(*,'(2a)') ' direto ', optSolverV
+         call solverGaussSkyline(alhsV,brhsV,idiagV,nalhsV, neqV, 'full')
+      end if
 !
       if (optSolverV=='pardiso') then
-         write(*,'(a)') '   //========> solver direto PARDISO, VELOCITY'
+         write(*,'(2a)') ' direto ', optSolverV
          call solverPardisoEsparso(alhsV, brhsV, ApVel, AiVel, ptV, iparmV, dparmV,  &
      &        neqV, nalhsV, simetriaVel, 'vel', 'full')
       end if
 !
-      if (optSolverV=='skyline') then
-         write(*,'(a)') '   //========> solver direto SKYLINE, VELOCITY'
-         call solverGaussSkyline(alhsV,brhsV,idiagV,nalhsV, neqV, 'full')
-      end if
-!
      if(optSolverV=='hypre') then
 
-         write(*,'(a)') ', solver iterativo HYPRE, Hidrodinamic'
+         write(*,'(2a)') ' iterativo ', optSolverV
 
        call fecharMatriz_HYPRE         (A_HYPRE_V, parcsr_A_V)
        call fecharVetor_HYPRE          (b_HYPRE_V, par_b_V   )

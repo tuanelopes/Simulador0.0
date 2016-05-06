@@ -1,0 +1,5 @@
+git clone https://github.com/tuanelopes/Simulador0.0.git
+git commit -m 'ajustes esteticos nos fontes driver e solvers + melhoria nos scripts'
+git add *
+git commit -m "comentários das alterações"
+git push origin master
