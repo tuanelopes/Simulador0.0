@@ -1260,14 +1260,32 @@ end program reservoirSimulator
 #endif
      tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
 
+      write(*,'(a)', ADVANCE='NO') '1, solucao do sistema de eq, GEOMECHANICS, '
+
       call timing(t1)
+
+      if (optSolverD=='skyline') then
+         write(*,'(2a)') ' direto ', optSolverD
+         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'fact')
+         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
+      end if
+!
+      if (optSolverD=='pardiso') then
+         write(*,'(2a)') ' direto ', optSolverD
+        if(NNP==0) &
+        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'reor')
+        
+        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'fact')
+        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
+      endif
+! 
       if(optSolverD=='hypre') then
+         write(*,'(2a)') ' iterativo ', optSolverD
 
          call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
          call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
          call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
 
-         write(*,'(a)') ', solver iterativo HYPRE, GEOMECHANIC'
          if(.not.allocated(initialGuess_G)) then
             allocate(initialGuess_G(neqD)); initialGuess_G=0.0
          endif
@@ -1290,29 +1308,14 @@ end program reservoirSimulator
 
       endif
 !
-      if (optSolverD=='pardiso') then
-         write(*,'(a)') '   //========> solver direto PARDISO, GEOMECHANICS'
-        if(NNP==0) &
-        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'reor')
-        
-        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'fact')
-        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
-      endif
-!
-      if (optSolverD=='skyline') then
-         write(*,'(a)') '   //========> solver direto SKYLINE, GEOMECHANICS'
-         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'fact')
-         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
-      end if
-! 
       call timing(t2)
 #ifdef mostrarTempos
       write(*,9003) t2-t1 
 #endif
      tempoSolverGeo=tempoSolverGeo+(t2-t1)
       write(*,*) " 200 continue, valores nos extremos do vetor solucao geo,  "
-      write(*,'(6e16.8)') brhsD(1    :5)
-      write(*,'(6e16.8)') brhsD(neqD-4: neqD)
+      write(*,'(6e16.8)') brhsD(1    :6)
+      write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 
       RETURN      
 !
@@ -1326,14 +1329,26 @@ end program reservoirSimulator
 #endif
      tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
 
-      call timing(t1)
-      if(optSolverD=='hypre') then
+      write(*,'(a)', ADVANCE='NO') '2, solucao do sistema de eq, GEOMECHANICS, '
 
+      call timing(t1)
+!
+      if (optSolverD=='skyline') then
+         write(*,'(2a)') ' direto ', optSolverD
+         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
+      end if
+!
+      IF (optSolverD=='pardiso') then
+         write(*,'(2a)') ' direto ', optSolverD
+         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
+      endif
+
+      if(optSolverD=='hypre') then
+         write(*,'(2a)') ' iterativo ', optSolverD
 !         call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
          call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
          call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
 
-         write(*,'(a)') ', solver iterativo HYPRE, GEOMECHANIC'
          if(.not.allocated(initialGuess_G)) then
             write(*,'(a)') ', allocate(initialGuessGeo(neqD)); initialGuessGeo=0.0 '
             allocate(initialGuess_G(neqD)); initialGuess_G=0.0
@@ -1354,16 +1369,6 @@ end program reservoirSimulator
          call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
       endif
-!
-      IF (optSolverD=='pardiso') then
-         write(*,'(a)') '   //========> solver direto PARDISO, GEOMECHANICS'
-         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
-      endif
-!
-      if (optSolverD=='skyline') then
-         write(*,'(a)') '   //========> solver direto SKYLINE, GEOMECHANICS'
-         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
-      end if
 !
 !.... UPDATE DISPLACEMENT 
 ! 
@@ -1393,9 +1398,7 @@ end program reservoirSimulator
       write(*,*) " 400 continue, valores nos extremos do vetor solucao geo,  "
       write(*,'(6e16.8)') brhsD(1    :6)
       write(*,'(6e16.8)') brhsD(neqD-5: neqD)
-
 !
-      call timing(t1)
 !
 !.... COMPUTE RESIDUAL EUCLIDEAN NORM
 !
@@ -1405,9 +1408,22 @@ end program reservoirSimulator
 !     
       WRITE(*,4000) RESIDUAL,resmax
 
-      if(optSolverD=='hypre') then
+      write(*,'(a)', ADVANCE='NO') '3, solucao do sistema de eq, GEOMECHANICS, '
+      call timing(t1)
 
-         write(*,'(a)') ', solver iterativo HYPRE, GEOMECHANIC'
+      if (optSolverD=='skyline') then
+         write(*,'(2a)') ' direto ', optSolverD
+!          call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
+         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'full')
+      end if
+
+      if (optSolverD=='pardiso') then
+         write(*,'(2a)') ' direto ', optSolverD
+         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'full')
+      endif
+      
+      if(optSolverD=='hypre') then
+         write(*,'(2a)') ' iterativo ', optSolverD
          if(.not.allocated(initialGuess_G)) then
             write(*,'(a)') ', allocate(initialGuessGeo(neqD)); initialGuessGeo=0.0 '
             allocate(initialGuess_G(neqD)); initialGuess_G=0.0
@@ -1428,17 +1444,6 @@ end program reservoirSimulator
          call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
       endif      
-      
-      if (optSolverD=='pardiso') then
-         write(*,'(a)') '    |====> solver direto PARDISO, GEOMECHANICS'
-         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'full')
-      endif
-      if (optSolverD=='skyline') then
-         write(*,'(a)') '    |====> solver direto SKYLINE, GEOMECHANICS'
-!          call solverDiretoSkyLine(alhsD, brhsD, idiagD, nalhsD, neqD, 'geo') 
-         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'full')
-      end if
-      
       call timing(t2)
 #ifdef mostrarTempos
       write(*,9003) t2-t1 
