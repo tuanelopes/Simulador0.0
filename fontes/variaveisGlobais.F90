@@ -44,9 +44,6 @@
       real*8, parameter  :: four=4.0d0, five=5.0d0, six=6.0d0
       real*8, parameter  :: pt1667=0.1666666666666667d0, pt25=0.25d0, pt5=0.5d0
       real*8  :: coef
-      integer :: nRK, ordemRK
-      integer :: optCC
-      logical :: simetriaVel, simetriaGeo
 
       integer :: numat
       integer :: nrowsh,nicode,npint
@@ -69,14 +66,11 @@
 
       CHARACTER(LEN=6)  :: SPLITT
       REAL(8)           :: YEARINJ, S3DIM
-      CHARACTER(LEN=7)  :: PREFIX 
-      CHARACTER(LEN=14) :: PATHDX 
       CHARACTER*25      :: TypeProcess
-      INTEGER :: NITGEO, NCREEP, NLOOPS, NUMDX
-      INTEGER :: NITHIDRO, IBBAR, MAXITERC
-      LOGICAL :: INITS3, SOLIDONLY, SALTCREEP, CYLINDER
-!
-      REAL(8) :: TOLSIGMA, TOLVELOC
+      INTEGER           :: NITGEO, NUMDX, NCREEP
+      INTEGER           :: NITHIDRO, IBBAR, MAXITERC
+      LOGICAL           :: INITS3, SALTCREEP
+      REAL(8)           :: TOLSIGMA, TOLVELOC
 
 !
       end module mGlobaisEscalares

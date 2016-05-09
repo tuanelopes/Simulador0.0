@@ -847,8 +847,6 @@
 !      
       subroutine calcdim(nsd,numnp,x)
 !
-      use mGlobaisEscalares, only: geomech
-!
       implicit none
 !
       integer :: nsd,numnp

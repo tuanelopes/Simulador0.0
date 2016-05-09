@@ -38,6 +38,7 @@
       integer, allocatable :: AiGeo(:), ApGeo(:), LMstencilGeo(:,:)
       INTEGER ptD(64), iparmD(64)
       REAL*8  dparmD(64)
+      logical :: simetriaGeo
 !
 ! ESCALARES
       REAL(8) :: KGYNG, RHOYNG ! YOUNG's GEOMETRIC MEAN, STRENGHT
@@ -62,6 +63,12 @@
       CHARACTER(len=128) :: YNG_IN
       real(8) :: kg,kgphi    ! media geometrica
       real(8) :: rho,rhophi  ! coeficiente da variancia (strenght)
+      
+      
+      LOGICAL :: SOLIDONLY, CYLINDER
+      INTEGER :: NCREEP
+      
+!       integer :: geomech
 !
       contains
 !
@@ -1009,7 +1016,7 @@
 ! 
       use mMalha,            only: nsd, numnp, numel, nen, LOCAL
       use mMalha,            only: numelReserv, multab
-      use mGlobaisEscalares, only: nrowsh, nnp, NCREEP
+      use mGlobaisEscalares, only: nrowsh, nnp
       use mFuncoesDeForma,   only: shgq, shlq
       use mPropGeoFisica,    only: YOUNG, PORE, PORE0
       use mPropGeoFisica,    only: GEOFORM, GEOINDIC, FNCMECLAW
@@ -1365,7 +1372,7 @@
 ! 
 !..... PROGRAM TO SETUP TANGENT MATRIX 
 !
-      USE mGlobaisEscalares, only: nnp, NCREEP
+      USE mGlobaisEscalares, only: nnp
 ! 
       IMPLICIT NONE
 ! 
@@ -1554,8 +1561,8 @@
      &                    VC  ,AVSTRS,NDOF2 ,NUMEL ,NROWB ,NUMNP)
 !
       use mMalha,            only: XC
-      USE mGlobaisEscalares, only: NUMDX, NNP, PATHDX
-      use mLeituraEscritaSimHidroGeoMec,   only: PRINT_DXINFO, IFEDX
+      USE mGlobaisEscalares, only: NUMDX, NNP
+      use mLeituraEscritaSimHidroGeoMec,   only: PRINT_DXINFO, IFEDX, PATHDX
       use mPropGeoFisica,    only: GEOFORM, GEOINDIC
 !
 !.... PROGRAM TO PRINT DATA FROM GEOMECHANIC MODEL
@@ -1828,7 +1835,7 @@
 !
 !.... PROGRAM TO SETUP INITIAL HIDROSTATIC PRESSURE 
 ! 
-      use mGlobaisEscalares, only: PATHDX, TypeProcess, SOLIDONLY
+      use mGlobaisEscalares, only: TypeProcess
       use mGlobaisArranjos,  only: GRAV
       use mMalha,            only: NEN, NSD, LEFTLINE, RGHTLINE 
       use mPropGeoFisica,    only: GEOFORM, FNCMECLAW, RHOW, RHOO

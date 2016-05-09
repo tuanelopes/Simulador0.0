@@ -86,6 +86,8 @@
       integer :: npcontpres,npcontsat,npcontphi,npcontvel,npcontdis
       
       logical :: apenasReservatorio=.false.
+      
+      CHARACTER(LEN=14) :: PATHDX 
 !
       contains
       
@@ -1982,10 +1984,10 @@ END SUBROUTINE escreverArqParaview_escalar
 !
 !*** NEW ***************************************************************
 !
-      SUBROUTINE SETUPDX()
+      SUBROUTINE SETUPDX(NUMDX, NITGEO, NITHIDRO, SALTCREEP)
 !
-      use mGlobaisEscalares, only: NITGEO, NITHIDRO
-      use mGlobaisEscalares, only: NUMDX, PATHDX, SALTCREEP
+      INTEGER :: NUMDX, NITGEO, NITHIDRO
+      LOGICAL :: SALTCREEP      
 !..
 !...  PROGRAM TO SETUP MANAGER FILES FOR GRAPHICAL INTERFACE OPEN-DX
 !
@@ -2044,13 +2046,12 @@ END SUBROUTINE escreverArqParaview_escalar
 !
 !**** NEW **** FOR DATA EXPLORER OUT PUT ************************************* 
 !
-      SUBROUTINE PRINT_DXMESH(X,DIS,GEOPRSR,STRSS0,conecNodaisElem,YOUNG,PERM)
+      SUBROUTINE PRINT_DXMESH(X,DIS,GEOPRSR,STRSS0,conecNodaisElem,YOUNG,PERM,CYLINDER,NUMDX)
 !
-      use mGlobaisEscalares, only: CYLINDER, NUMDX, PATHDX
       use mMalha,            only: XC, NEN, NSD, numel, numnp, numelReserv
       use mPropGeoFisica,    only: GEOFORM, GEOINDIC
 !
-      INTEGER :: K, NODE, NEL, ICENTER
+      INTEGER :: K, NODE, NEL, ICENTER, NUMDX
       INTEGER, DIMENSION(NEN,NUMEL)   :: conecNodaisElem
       REAL(8), DIMENSION(NSD,NUMNP)   :: X, DIS
       REAL(8), DIMENSION(NUMEL)       :: YOUNG, GEOPRSR
@@ -2059,6 +2060,8 @@ END SUBROUTINE escreverArqParaview_escalar
       REAL(8) :: XPRINT, RADIAL, ANGLE, PI
       REAL(8) :: SGXXCOS2, SGYYSIN2, SGXYSIN2, SIGMAR
       CHARACTER*30                    :: CENTER
+      LOGICAL :: CYLINDER
+      
 !
 !.... PRINT DISPLACEMENTS DATA FOR OPEN-DX FILE
 ! 
@@ -2757,7 +2760,7 @@ END SUBROUTINE escreverArqParaview_escalar
     subroutine readSetupPhaseDS(nlvectV, nlvectP, nlvectD, optSolverV, optSolverD)
         use mInputReader,      only:readStringKeywordValue, readIntegerKeywordValue
         use mGlobaisArranjos,  only: title
-        use mGlobaisEscalares, only: exec, iprtin, optCC, TypeProcess
+        use mGlobaisEscalares, only: exec, iprtin, TypeProcess
         use mMalha,            only: nsd, numel, numnp
         use mMalha,            only: numnpReserv, numelReserv, numelReserv
         use mPropGeoFisica,    only: nelx, nely, nelz

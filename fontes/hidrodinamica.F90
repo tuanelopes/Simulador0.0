@@ -30,6 +30,7 @@
       integer, allocatable :: AiVel(:), ApVel(:), LMstencilVel(:,:)
       INTEGER ptV(64), iparmV(64)
       REAL*8  dparmV(64)
+      logical :: simetriaVel
 
 
       
@@ -55,7 +56,6 @@
      &           SIGMA0,TIMEINJ)
 !
       use mGlobaisArranjos,  only : mat, c, beta
-      use mGlobaisEscalares, only : simetriaVel
       use mGlobaisEscalares, only : tempoSolverVel,tempoMontagemVel,tempoTotalPressao
       use mGlobaisEscalares, only : dtBlocoTransp, tTransporte
       use mGlobaisEscalares, only : nvel, nnp

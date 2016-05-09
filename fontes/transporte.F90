@@ -267,7 +267,7 @@
            conecLadaisElem,listaDosElemsPorFace,dt,uf,&
            v,numLadosElem)
 !     
-        use mGlobaisEscalares, only: nRK, ordemRK, ns,nvel,tTransporte,tempoNucTrans, nnp
+        use mGlobaisEscalares, only: ns,nvel,tTransporte,nnp
         use mGlobaisArranjos,  only: uTempoN, mat, c
         use mGeomecanica,      only: ndofD 
         use mHidrodinamicaRT,  only: ndofV 
@@ -309,9 +309,6 @@
 !     
 !.... Mensagem: KT DxD
 !     
-        ordemRK=1
-        print*, "calculando saturacao com rk=", ordemRK
-!
         z=0.d0
 !
         if (allocated(du) .eqv. .false.) allocate(du(nsd,numelReserv))
@@ -411,7 +408,7 @@
            conecLadaisElem,listaDosElemsPorFace,dt,uf,&
            v,numLadosElem)
 !     
-        use mGlobaisEscalares, only: nRK, ordemRK, ns,nvel,tTransporte,tempoNucTrans,nnp
+        use mGlobaisEscalares, only: ns,nvel,tTransporte,nnp
         use mGlobaisArranjos,  only: uTempoN, mat, c
         use mGeomecanica, only: ndofD 
         use mHidrodinamicaRT, only: ndofV 
@@ -420,8 +417,8 @@
         use mLeituraEscritaSimHidroGeoMec,   only: tprt_masl,dtprt_masl, tprt_sat,dtprt_sat
         use mMalha,            only: numLadosReserv, xc, x, numelReserv
         use mPropGeoFisica
-        use mGeomecanica,      only: VDP, NED2, GEOTIME
         use mHidroDinamicaRT,  only: pressaoElem, pressaoElemAnt
+        use mGeomecanica,      only: VDP, NED2, GEOTIME
 !
         implicit none
 !     
@@ -457,9 +454,6 @@
 !     
 !     Mensagem: KT DxD
 !     
-        ordemRK=1
-        print*, "calculando saturacao com rk=", ordemRK
-
         z=0.d0
 !
         if (allocated(du) .eqv. .false.) allocate(du(nsd,numelReserv))
@@ -1049,7 +1043,7 @@
 !     
 !     KT DxD na fronteira do dominio
 !
-        use mGlobaisEscalares, only : nRK, ordemRK, nnp
+        use mGlobaisEscalares, only : nnp
         use mMalha, only: numLadosElem, nsd
 !
         implicit none
@@ -2300,7 +2294,7 @@
             conecLadaisElem,listaDosElemsPorFace,dt,uf,&
             v,numLadosElem)
 !     
-         use mGlobaisEscalares, only: nRK, ordemRK, ns,nvel,tTransporte,tempoNucTrans,nnp
+         use mGlobaisEscalares, only: ns,nvel,tTransporte,nnp
          use mGlobaisArranjos,  only: uTempoN, mat, c
          use mGeomecanica, only: ndofD 
          use mHidrodinamicaRT, only: ndofV 
@@ -2339,9 +2333,6 @@
 !     
 !.... Mensagem: KT DxD
 !     
-         ordemRK=1
-         print*, "calculando saturacao com rk=", ordemRK
-!
          z=0.d0
 !
          if (allocated(du) .eqv. .false.) allocate(du(nsd,numelReserv))

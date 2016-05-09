@@ -124,10 +124,7 @@
 !
       subroutine gerarLabel(label,tempo)
 !
-      use mGlobaisEscalares, only: tt
-!
       implicit none
-
 
       character(LEN=21), intent(out) :: label
       real*8, intent(in) :: tempo
