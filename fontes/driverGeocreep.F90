@@ -1345,11 +1345,9 @@ end program reservoirSimulator
 
       if(optSolverD=='hypre') then
          write(*,'(2a)') ' iterativo ', optSolverD
-
-
-!         call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
+         call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
          call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
-!         call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
+         call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
 
          if(.not.allocated(initialGuess_G)) then
             allocate(initialGuess_G(neqD)); initialGuess_G=0.0
@@ -1364,7 +1362,6 @@ end program reservoirSimulator
 
          call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
          initialGuess_G=brhsD
-
 
          call destruirVetor_HYPRE(b_HYPRE_G)
          call destruirVetor_HYPRE(u_HYPRE_G)
@@ -1428,8 +1425,6 @@ end program reservoirSimulator
 
       if(optSolverD=='hypre') then
          write(*,'(2a)') ' iterativo ', optSolverD
-
-
          call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
          call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
          call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
@@ -1447,7 +1442,6 @@ end program reservoirSimulator
 
          call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
          initialGuess_G=brhsD
-
 
          call destruirVetor_HYPRE(b_HYPRE_G)
          call destruirVetor_HYPRE(u_HYPRE_G)
