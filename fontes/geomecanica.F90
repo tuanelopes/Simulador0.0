@@ -442,7 +442,7 @@
            rows_G(i) = i-1      ! creep
        end do     ! creep
       call adicionarValoresVetor_HYPRE(b_HYPRE_G, 1, neqD, rows_G, BRHSD)
-
+!       call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   ) ! precisa fechar???
       endif  ! creep
 
 
@@ -652,7 +652,8 @@
           call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )   ! elast
 
        end if   ! elast
-     
+       
+       
 !
       RETURN
 !
@@ -2409,6 +2410,8 @@
 !
 !.... ASSEMBLE ELEMENT FORCE ARRAY INTO GLOBAL RIGHT-HAND SIDE VECTOR
 !
+
+
          CALL ADDRHS(BRHSD,ELRESFD,LMD(1,1,NEL),NEE2)
 !
  500  CONTINUE
@@ -2418,11 +2421,16 @@
 !660   continue
 
       if (optSolverD=='hypre')   then
+          do i = 1, neqD 
+             rows_G(i) = i-1
+          end do 
+          
          call adicionarValoresVetor_HYPRE(b_HYPRE_G, 1, neqD, rows_G, BRHSD)
    !      call fecharMatriz_HYPRE            (A_HYPRE_G, parcsr_A_G)  ! creep
          call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   )  ! creep
    !      call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )  ! creep
       endif
+      
 
       RETURN
  4500 FORMAT(I7,X,40(1PE15.8,2X))
