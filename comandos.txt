@@ -1,5 +1,25 @@
 git clone https://github.com/tuanelopes/Simulador0.0.git
-git commit -m 'ajustes esteticos nos fontes driver e solvers + melhoria nos scripts'
 git add *
-git commit -m "comentários das alterações"
+git commit -m 'ajustes esteticos nos fontes driver e solvers + melhoria nos scripts'
 git push origin master
+
+ (use "git add/rm <file>..." to update what will be committed)
+ (use "git checkout -- <file>..." to discard changes in working directory)
+
+
+./rodarExperimento.sh aexp120x16CREEP/ 1 4 1 2 PHtol-08 |grep -E "Passo|passos|COUNTER"
+
+grep -a passos exp120x16CREEP/tela_PHG4_2ThrHP.txt | awk ' /passos/{s=s+$4} END{print s} '
+
+grep -a passos exp120x16CREEP/tela_PHG0_1ThrPHtol-06.txt | awk ' /passos/{s=s+$4} END{print s}
+
+grep -a "solucao geo" exp120x16CREEP/tela_PHG0_1ThrPP.txt -A 2 -B 2 
+
+sed -e '/solver_geo/a pardiso' -e '/solver_geo/ {n;d}' aexp120x16CREEP/SimulatorParam.inc -i
+sed -e '/solver_geo/a hypre'   -e '/solver_geo/ {n;d}' aexp120x16CREEP/SimulatorParam.inc -i
+
+sort -h -k1 -k2 aexp120x16CREEP/Alhs400.out..00000 > aexp120x16CREEP/MAlhs400.out
+awk '{if ($1<=$2) print $0}' aexp120x16CREEP/MAlhs400.out  > aexp120x16CREEP/SMAlhs400.out
+
+grep -a "400 continue"  aexp120x16CREEP/tela_PHG0_1ThrP[HP].txt -A 2 -B 2
+

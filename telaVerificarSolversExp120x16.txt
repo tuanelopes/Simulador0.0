@@ -1,0 +1,63 @@
+Nova simulacao ...................
+solvers escolhidos no arquivo: exp120x16/SimulatorParam.inc
+
+*solver_hidrodinamica{
+skyline
+}
+*solver_geomecanica{
+skyline
+}
+./rodarExperimento.sh exp120x16 4 1 2 4 GG |grep equacoes:
+solvers escolhidos e lidos pelo simulador 
+Solver para a solucao do sistema de equacoes: Hidro:skyline, Geo:skyline
+Nova simulacao ...................
+solvers escolhidos no arquivo: exp120x16/SimulatorParam.inc
+
+*solver_hidrodinamica{
+skyline
+}
+*solver_geomecanica{
+pardiso
+}
+./rodarExperimento.sh exp120x16 4 1 2 4 GP |grep equacoes:
+solvers escolhidos e lidos pelo simulador 
+Solver para a solucao do sistema de equacoes: Hidro:skyline, Geo:pardiso
+Nova simulacao ...................
+solvers escolhidos no arquivo: exp120x16/SimulatorParam.inc
+
+*solver_hidrodinamica{
+skyline
+}
+*solver_geomecanica{
+hypre
+}
+./rodarExperimento.sh exp120x16 4 1 2 4 GH |grep equacoes:
+solvers escolhidos e lidos pelo simulador 
+Solver para a solucao do sistema de equacoes: Hidro:skyline, Geo:hypre  
+Nova simulacao ...................
+solvers escolhidos no arquivo: exp120x16/SimulatorParam.inc
+
+*solver_hidrodinamica{
+pardiso
+}
+*solver_geomecanica{
+hypre
+}
+./rodarExperimento.sh exp120x16 4 1 2 4 PH |grep equacoes:
+solvers escolhidos e lidos pelo simulador 
+Solver para a solucao do sistema de equacoes: Hidro:pardiso, Geo:hypre  
+..........
+...verificacao comparando a soma do numero de passos do transposte
+...valor esperado 336
+arquivo tela: exp120x16/tela_PHG4_4ThrGG.txt
+Solver para a solucao do sistema de equacoes: Hidro:skyline, Geo:skyline
+ soma do num. passos do transporte= 336
+arquivo tela: exp120x16/tela_PHG4_4ThrGP.txt
+Solver para a solucao do sistema de equacoes: Hidro:skyline, Geo:pardiso
+ soma do num. passos do transporte= 336
+arquivo tela: exp120x16/tela_PHG4_4ThrGH.txt
+Solver para a solucao do sistema de equacoes: Hidro:skyline, Geo:hypre  
+ soma do num. passos do transporte= 336
+arquivo tela: exp120x16/tela_PHG4_4ThrPH.txt
+Solver para a solucao do sistema de equacoes: Hidro:pardiso, Geo:hypre  
+ soma do num. passos do transporte= 336
