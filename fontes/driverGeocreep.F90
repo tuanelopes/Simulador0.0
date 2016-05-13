@@ -189,8 +189,6 @@ end program reservoirSimulator
       if(optSolverD=="pardiso") simetriaGeo=.true.
       if(optSolverV=="hypre") simetriaVel=.false.
       if(optSolverD=="hypre") simetriaGeo=.false.
-
-
      
 !
 !.... STRESS DIMENSION PHISICS: S3DIM
@@ -1009,6 +1007,7 @@ end program reservoirSimulator
                CALL GEOMECHANIC('GEOMECHANICS_CREEP')
                ERRSIZE = residual/resmax
                write(*,5000) ERRSIZE
+               !bidustop 'depois de GEOMECHANICS_CREEP'
 !
 !.... .. ... NEXT TEST RESIDUAL NORM WITH TOLERANCE CRITERIA 4 CREEP
 !
@@ -1039,6 +1038,8 @@ end program reservoirSimulator
          call GEOMECHANIC('UPDAT_MASS_CONTENT')
 !...
          call transport(velocLadal)
+
+         !bidustop 'aqui'
          ERRSZVEL = VELNORM(velocLadal,VELOCITYL,numLadosReserv)
          IF (INDEXL.EQ.1) THEN 
               ERRVEL0 = ERRSZVEL
@@ -1212,16 +1213,17 @@ end program reservoirSimulator
       use mGlobaisEscalares, only: nnp, nrowsh
       use mGlobaisEscalares, only: tempoMontagemGeo, tempoSolverGeo
       use mTransporte,       only: satElemAnt, satElem
-      use mSolverPardiso,    only: solverPardisoEsparso
+      use mSolverPardiso,    only: solverPardisoEsparso, escreverSistemaAlgCSRemMTX
       use mSolverGaussSkyline, only: solverGaussSkyline
       use mSolverHypre
+      use mSolverHypre, only: destruirMatriz_HYPRE, criarMatriz_HYPRE  
 !
       implicit none
 !
       CHARACTER(LEN=18) :: FASE
 !
       real*8           :: t1,t2
-      integer          :: i, j, k
+      integer          :: i, j, k, ierr
       real*8  ::  final_res_norm, tol
       integer :: num_iterations
 !
@@ -1237,6 +1239,11 @@ end program reservoirSimulator
 !
       WRITE(*,*) ' ==> GEOMECHANIC TASK == ', FASE
 !
+
+      solver_id_G  = 1
+      precond_id_G = 1
+      tol = 1.0e-08
+
       DO 10 I=1,9
          IF (FASE.EQ.REFTASK(I)) J=I
 10    CONTINUE
@@ -1259,7 +1266,7 @@ end program reservoirSimulator
 #endif
      tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
 
-      write(*,'(a)', ADVANCE='NO') '1, solucao do sistema de eq, GEOMECHANICS, '
+      write(*,'(a)', ADVANCE='NO') '2, solucao do sistema de eq, GEOMECHANICS, '
 
       call timing(t1)
 
@@ -1289,9 +1296,6 @@ end program reservoirSimulator
             allocate(initialGuess_G(neqD)); initialGuess_G=0.0
          endif
        
-         solver_id_G  = 1
-         precond_id_G = 1
-         tol = 1.0e-08
          call resolverSistemaAlgHYPRE (A_HYPRE_G, parcsr_A_G, b_HYPRE_G, par_b_G, u_HYPRE_G, par_u_G, &
                                    solver_G, solver_id_G, precond_id_G, tol,    &
                                    num_iterations, final_res_norm, initialGuess_G, brhsD, rows_G, neqD, myid, mpi_comm)
@@ -1302,6 +1306,8 @@ end program reservoirSimulator
 
          call destruirVetor_HYPRE(b_HYPRE_G)
          call destruirVetor_HYPRE(u_HYPRE_G)
+!         call destruirMatriz_HYPRE(A_HYPRE_G)
+!         call criarMatriz_HYPRE  (A_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
 
@@ -1316,6 +1322,8 @@ end program reservoirSimulator
       write(*,'(6e16.8)') brhsD(1    :6)
       write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 
+
+
       RETURN      
 !
 300   CONTINUE     !....  fase=='RIGHT_SIDE_2_SOLVE'
@@ -1328,7 +1336,7 @@ end program reservoirSimulator
 #endif
      tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
 
-      write(*,'(a)', ADVANCE='NO') '2, solucao do sistema de eq, GEOMECHANICS, '
+      write(*,'(a)', ADVANCE='NO') '3, solucao do sistema de eq, GEOMECHANICS, '
 
       call timing(t1)
 !
@@ -1339,12 +1347,13 @@ end program reservoirSimulator
 !
       IF (optSolverD=='pardiso') then
          write(*,'(2a)') ' direto ', optSolverD
+         call escreverSistemaAlgCSRemMTX(alhsD, brhsD, ApGeo, AiGeo,  nalhsD, neqD, "sistemaPardisoGeo300.mtx")
          call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
       endif
 
-
       if(optSolverD=='hypre') then
          write(*,'(2a)') ' iterativo ', optSolverD
+
          call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
          call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
          call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
@@ -1352,10 +1361,10 @@ end program reservoirSimulator
          if(.not.allocated(initialGuess_G)) then
             allocate(initialGuess_G(neqD)); initialGuess_G=0.0
          endif
-       
-         solver_id_G  = 1
-         precond_id_G = 1
-         tol = 1.0e-08
+
+       !  write(*,*) "call HYPRE_IJMatrixPrint"
+       !  call HYPRE_IJMatrixPrint( A_HYPRE_G, "Alhs300.out.", ierr)
+
          call resolverSistemaAlgHYPRE (A_HYPRE_G, parcsr_A_G, b_HYPRE_G, par_b_G, u_HYPRE_G, par_u_G, &
                                    solver_G, solver_id_G, precond_id_G, tol,    &
                                    num_iterations, final_res_norm, initialGuess_G, brhsD, rows_G, neqD, myid, mpi_comm)
@@ -1363,12 +1372,17 @@ end program reservoirSimulator
          call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
          initialGuess_G=brhsD
 
+
          call destruirVetor_HYPRE(b_HYPRE_G)
          call destruirVetor_HYPRE(u_HYPRE_G)
+         call destruirMatriz_HYPRE(A_HYPRE_G)
+         call criarMatriz_HYPRE  (A_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
 
       endif
+
+
 !
 !.... UPDATE DISPLACEMENT 
 ! 
@@ -1384,21 +1398,29 @@ end program reservoirSimulator
       write(*,'(6e16.8)') brhsD(1    :6)
       write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 !
+      !stop
       RETURN
 !
 400   CONTINUE     !.... fase=='GEOMECHANICS_CREEP'
+
+
+!      call destruirMatriz_HYPRE(A_HYPRE_G)
+!      call criarMatriz_HYPRE (A_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
 !
       call timing(t1)
       call montarSistEqAlgGEO('bbarmatrix_creep',satElem)
       call timing(t2)
+
+
 #ifdef mostrarTempos
       write(*,9002) t2-t1 
 #endif
      tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
-      write(*,*) " 400 continue, valores nos extremos do vetor solucao geo,  "
+
+      write(*,*) " 400 continue, valores nos extremos do vetor BRHS geo,  "
       write(*,'(6e16.8)') brhsD(1    :6)
       write(*,'(6e16.8)') brhsD(neqD-5: neqD)
-!
+
 !
 !.... COMPUTE RESIDUAL EUCLIDEAN NORM
 !
@@ -1408,7 +1430,7 @@ end program reservoirSimulator
 !     
       WRITE(*,4000) RESIDUAL,resmax
 
-      write(*,'(a)', ADVANCE='NO') '3, solucao do sistema de eq, GEOMECHANICS, '
+      write(*,'(a)', ADVANCE='NO') '4, solucao do sistema de eq, GEOMECHANICS, '
       call timing(t1)
 
       if (optSolverD=='skyline') then
@@ -1419,12 +1441,13 @@ end program reservoirSimulator
 
       if (optSolverD=='pardiso') then
          write(*,'(2a)') ' direto ', optSolverD
+         call escreverSistemaAlgCSRemMTX(alhsD, brhsD, ApGeo, AiGeo,  nalhsD, neqD, "sistemaPardisoGeo400.mtx")
          call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'full')
       endif
-
-
+      
       if(optSolverD=='hypre') then
          write(*,'(2a)') ' iterativo ', optSolverD
+
          call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
          call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
          call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
@@ -1432,10 +1455,14 @@ end program reservoirSimulator
          if(.not.allocated(initialGuess_G)) then
             allocate(initialGuess_G(neqD)); initialGuess_G=0.0
          endif
+
+
+
+         !write(*,*) "call HYPRE_IJMatrixPrint"
+         !call HYPRE_IJMatrixPrint( b_HYPRE_G, "Blhs400.out.", ierr)
+         !call HYPRE_IJMatrixPrint( A_HYPRE_G, "Alhs400.out.", ierr)
+
        
-         solver_id_G  = 1
-         precond_id_G = 1
-         tol = 1.0e-08
          call resolverSistemaAlgHYPRE (A_HYPRE_G, parcsr_A_G, b_HYPRE_G, par_b_G, u_HYPRE_G, par_u_G, &
                                    solver_G, solver_id_G, precond_id_G, tol,    &
                                    num_iterations, final_res_norm, initialGuess_G, brhsD, rows_G, neqD, myid, mpi_comm)
@@ -1443,12 +1470,21 @@ end program reservoirSimulator
          call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
          initialGuess_G=brhsD
 
+
          call destruirVetor_HYPRE(b_HYPRE_G)
          call destruirVetor_HYPRE(u_HYPRE_G)
+         call destruirMatriz_HYPRE(A_HYPRE_G)
+         call criarMatriz_HYPRE  (A_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+      endif
 
-       endif
+      write(*,*) " 400 continue, valores nos extremos do vetor solucao geo,  "
+      write(*,'(6e16.8)') brhsD(1    :6)
+      write(*,'(6e16.8)') brhsD(neqD-5: neqD)
+
+     ! write(911,*) BRHSD
+
 
       call timing(t2)
 #ifdef mostrarTempos
@@ -1466,6 +1502,7 @@ end program reservoirSimulator
 !
       CALL POS4CREEP(x, conecNodaisElem)
 !
+      !stop
       RETURN
 !
 500   CONTINUE     !.... fase='ELAST_STRSS_SIGMAT'

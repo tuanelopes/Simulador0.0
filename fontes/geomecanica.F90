@@ -235,25 +235,7 @@
       tid        = 1
       numThreads = 1
 
-! !$OMP PARALLEL FIRSTPRIVATE(tid) &
-! !$OMP PRIVATE (numPrimeiroElemento, numUltimoElemento, inicioSol,fimSol) &
-! !$OMP PRIVATE (I,J,L,K,NEL,BBARI,BBARJ,QIXIBBAR,QIXI,PRESSURE,XL,DISL,TENSAO,C1,IOPT,QUAD,LSYM) &
-! !$OMP PRIVATE (R,SHGD,SHGBR,DETD) &
-! !$OMP REDUCTION(+:ELEFFMD,ELRESFD) !,BRHSD,ALHSD)
 
-! 
-! #ifdef withOMP
-!        tid=tid+omp_get_thread_num()
-!        numThreads=omp_get_num_threads()
-! #endif
-!
-!       numPrimeiroElemento = 1
-!       numUltimoElemento   = numel
-!       call dividirTrabalho(numPrimeiroElemento, numUltimoElemento, numThreads, tid-1, inicioSol, fimSol)
-!
-! !$OMP PARALLEL DO ORDERED SCHEDULE(DYNAMIC)
-!
-!       DO 500 NEL=inicioSol,fimSol
      DO 500 NEL=1,numel
 !
          BBARI    = 0.0D0
@@ -413,9 +395,10 @@
 !.... ASSEMBLE ELEMENT STIFFNESS MATRIX AND FORCE ARRAY INTO GLOBAL 
 !....     LEFT-HAND-SIDE MATRIX AND RIGHT-HAND SIDE VECTOR 
 ! 
-      LSYM=.TRUE.
 
-! $OMP ORDERED
+!     write(910,*) ELEFFMD
+
+      LSYM=.TRUE.
 
      if (optSolverD=='skyline')   then
         CALL ADDLHS(ALHSD,ELEFFMD,LMD(1,1,NEL),IDIAGD,NEE2,DIAG,LSYM) 
@@ -431,22 +414,19 @@
 !
      CALL ADDRHS(BRHSD,ELRESFD,LMD(1,1,NEL),NEE2) 
 
-! $OMP END ORDERED
-       
  500   CONTINUE 
-! OMP END DO
+!
+     if (optSolverD=='hypre')   then
+!        do i = 1, neqD 
+!           rows_G(i) = i-1
+!        end do  
 
-! 
-      if (optSolverD=='hypre')   then     ! creep
-       do i = 1, neqD     ! creep
-           rows_G(i) = i-1      ! creep
-       end do     ! creep
-      call adicionarValoresVetor_HYPRE(b_HYPRE_G, 1, neqD, rows_G, BRHSD)
-!       call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   ) ! precisa fechar???
-      endif  ! creep
-
-
-! $OMP END PARALLEL
+        call adicionarValoresVetor_HYPRE(b_HYPRE_G, 1, neqD, rows_G, BRHSD)
+        !call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   )   
+        !call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )   
+     end if   
+!       print*, rows_G
+!        stop
 
 !
       RETURN
@@ -2426,9 +2406,8 @@
           end do 
           
          call adicionarValoresVetor_HYPRE(b_HYPRE_G, 1, neqD, rows_G, BRHSD)
-   !      call fecharMatriz_HYPRE            (A_HYPRE_G, parcsr_A_G)  ! creep
          call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   )  ! creep
-   !      call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )  ! creep
+         call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )  ! creep
       endif
       
 
