@@ -1,10 +1,13 @@
 git clone https://github.com/tuanelopes/Simulador0.0.git
 git add *
 git commit -m 'ajustes esteticos nos fontes driver e solvers + melhoria nos scripts'
-git push origin master
+git commit -m "comentários das alterações"  #preparar as atualizacoes do repositorio
+git push origin master    # atualizar o repositorio de trabalho
 
- (use "git add/rm <file>..." to update what will be committed)
- (use "git checkout -- <file>..." to discard changes in working directory)
+git pull origin master    # atualizar o diretorio de trabalho
+
+(use "git add/rm <file>..." to update what will be committed)
+(use "git checkout -- <file>..." to discard changes in working directory)
 
 
 ./rodarExperimento.sh aexp120x16CREEP/ 1 4 1 2 PHtol-08 |grep -E "Passo|passos|COUNTER"
