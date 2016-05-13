@@ -189,8 +189,6 @@ end program reservoirSimulator
       if(optSolverD=="pardiso") simetriaGeo=.true.
       if(optSolverV=="hypre") simetriaVel=.false.
       if(optSolverD=="hypre") simetriaGeo=.false.
-
-
      
 !
 !.... STRESS DIMENSION PHISICS: S3DIM
