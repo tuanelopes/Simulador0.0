@@ -407,7 +407,8 @@
   200          continue
                cols = cols - 1
                eq = eq - 1
-       !       write(*,'(a,i5,a,10i5)') " eq = ", eq,  ", ", cols(1:nnz)
+              !write(*,'(a,i5,a,10i5)') " eq = ", eq,  ", ", cols(1:nnz)
+              !stop
                call HYPRE_IJMatrixAddToValues(A_, 1, nnz, eq, cols, values, ierr)
             end if
   400    continue

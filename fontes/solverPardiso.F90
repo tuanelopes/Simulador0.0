@@ -1063,6 +1063,55 @@
 !    
       end subroutine
 
+      subroutine escreverSistemaAlgCSRemMTX(alhs, brhs, Ap, Ai,  nonzeros, neq, nomeArq)
+      implicit none 
+      real*8,  intent(in)   :: Alhs(:), brhs(:)
+      integer*4,  intent(in)  :: Ap(:), Ai(:)
+      integer*4,  intent(in)  :: neq, nonzeros
+      character (len=*)  :: nomeArq
+!
+      integer*8 :: i, j, k
+      integer*8 :: luSist = 1836 
+      character(len=40), parameter :: formatoEscritaA='(2(i0,1x),e23.16)'
+      character(len=40), parameter :: formatoEscritaB='(e23.16)'
+      character(len=40), parameter :: formatoEscritaC='(e23.16,a)'
+      real*8 :: t1, t2, t3, t4
+!
+      write(*,*) " em subroutine escreverSistemaAlgCSRemMTX(alhs, brhs, Ap, Ai, ... "
+      call timing(t1)
+      open(file=nomeArq, unit=luSist) 
+!
+!      write(luSist,'(a)')'%% matriz A de coeficientes reais simetrica positiva definida ' 
+      write(luSist,'(a)')'%%MatrixMarket matrix coordinate real symmetric' 
+      write(luSist,'(a)')'% produzida pelo metodo classico de galerkin para o metodo de elementos finitos '
+      write(luSist,'(a)')'% armazenamento esparso CSR '
+      write(luSist,'(a,3(i0,a))' )  '%  matriz ',neq, 'X',neq, ' com ', nonzeros, ' coefs diferentes de zero' 
+      write(luSist,'(  3(i0,1x))' )  neq, neq, nonzeros 
+      write(*,*) size(alhs), size(brhs), size(Ap), size(Ai)  
+      k = 1
+      do i = 1, neq
+          !write(luA, *) Ap(i) ,  Ap(i+1) 
+           do j = Ap(i) ,  Ap(i+1) - 1  
+                write(luSist, formatoEscritaA   ) i, Ai(j), alhs(k)
+                !write(luA+luAux, '( 3(i10,2x), e20.10, 2x,i5)'     ) i, j,  Ai(j), alhs(k), k
+                k = k + 1
+           end do
+      end do
+!      write(luSist,'( (a,i0,a))') '% lado direito com ',neq,' elementos' 
+!      write(luSist,'(  3(i10))' )  neq 
+      i = 1
+      write(luSist, formatoEscritaC )  brhs(i), "  BRHS"
+      do i = 2, neq
+          write(luSist, formatoEscritaB )  brhs(i)
+      end do
+      close(luSist)
+      call timing(t2)
+      write(*,*) " tempo de escrita =", t2 - t1
+
+     end subroutine escreverSistemaAlgCSRemMTX
+
+
+
 
 !
      end module mSolverPardiso
