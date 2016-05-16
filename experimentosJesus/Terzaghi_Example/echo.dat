@@ -1,0 +1,458 @@
+Para
+
+
+ e x e c u t i o n   c o n t r o l   i n f o r m a t i o n 
+
+      execution code  . . . . . . . . . . . . . . (exec ) =          1
+
+         eq. 0, data check                                  
+         eq. 1, execution                                   
+
+      input data print code . . . . . . . . . . .(iprtin) =          0
+
+         eq. 0, print nodal and element input data          
+         eq. 1, do not print nodal and element input data   
+      number of space dimensions  . . . . . . . .(nsd   ) =          2
+      number of nodal points  . . . . . . . . .  (numnp ) =       5151
+
+      number of Lados         . . . . . . . . .(numLados) =          0
+
+      number of nodal degrees-of-freedom  . . . (ndofP ) =          0
+
+      number of nodal degrees-of-freedom  . . . (ndofV ) =          0
+
+      number of nodal degrees-of-freedom  . . . (ndofD ) =          0
+
+      number of load vectors  . . . . . . . . . (nlvectP) =          1
+
+      number of load vectors  . . . . . . . . . (nlvectV) =          1
+
+      number of load vectors  . . . . . . . . . (nlvectD) =          1
+
+
+      MESH DATA FOR RESERVOIR AND OVERBUDEN DOMAINS:     
+
+       ELEMENTS IN X-DIRECTION GLOBAL DOMAIN. . (NELX ) =        100
+
+       ELEMENTS IN Y-DIRECTION GLOBAL DOMAIN. . (NELY ) =         50
+
+       ELEMENTS IN Z-DIRECTION GLOBAL DOMAIN. . (NELZ ) =          0
+
+       NODAL POINTS FOR GLOBAL DOMAIN . . . . . (NUMNP) =       5151
+
+       ELEMENTS IN X-DIRECTION RESERVOIR. . . . (NELX1) =        100
+
+       ELEMENTS IN Y-DIRECTION RESERVOIR. . . . (NELY1) =         50
+
+       ELEMENTS IN Z-DIRECTION RESERVOIR. . . . (NELZ1) =          0
+
+       NODAL POINTS FOR RESERVOIR . . . . . . . (NUMNP1)=       5151
+
+
+      MESH STRUCTURE AND READ INPUT DATA OPTIONS:           
+
+      Reservoir Fine Mesh and External Gross  (IrregMesh) =  0
+         eq. 0, Not Read External Files                     
+         eq. 1, Read Files with Coordinates and Conectivies 
+
+      Read Geomechanical Dirichlet Conditions (Dirichlet) =  0
+         eq. 0, Not Read External Files                     
+         eq. 1, Read External File                          
+
+      Read Geomechanical Neumann   Conditions (Neumann  ) =  0
+         eq. 0, Not Read External Files                     
+         eq. 1, Read External File                          
+
+      Multiply Sea Load on Neumann Conditions (I4SeaLoad) =  0
+         eq. 0, Not Multiply by External Load               
+         eq. 1, Multiply by External Load                   
+
+
+1 n o d a l   b o u n d a r y   c o n d i t i o n          c o  d e s
+
+
+      node no.         dof1
+               1                   1
+               2                   1
+               3                   1
+               4                   1
+               5                   1
+               6                   1
+               7                   1
+               8                   1
+               9                   1
+              10                   1
+              11                   1
+              12                   1
+              13                   1
+              14                   1
+              15                   1
+              16                   1
+              17                   1
+              18                   1
+              19                   1
+              20                   1
+              21                   1
+              22                   1
+              23                   1
+              24                   1
+              25                   1
+              26                   1
+              27                   1
+              28                   1
+              29                   1
+              30                   1
+              31                   1
+              32                   1
+              33                   1
+              34                   1
+              35                   1
+              36                   1
+              37                   1
+              38                   1
+              39                   1
+              40                   1
+              41                   1
+              42                   1
+              43                   1
+              44                   1
+              45                   1
+              46                   1
+              47                   1
+              48                   1
+              49                   1
+              50                   1
+1 n o d a l   b o u n d a r y   c o n d i t i o n          c o  d e s
+
+
+      node no.         dof1
+              51                   1
+              52                   1
+              53                   1
+              54                   1
+              55                   1
+              56                   1
+              57                   1
+              58                   1
+              59                   1
+              60                   1
+              61                   1
+              62                   1
+              63                   1
+              64                   1
+              65                   1
+              66                   1
+              67                   1
+              68                   1
+              69                   1
+              70                   1
+              71                   1
+              72                   1
+              73                   1
+              74                   1
+              75                   1
+              76                   1
+              77                   1
+              78                   1
+              79                   1
+              80                   1
+              81                   1
+              82                   1
+              83                   1
+              84                   1
+              85                   1
+              86                   1
+              87                   1
+              88                   1
+              89                   1
+              90                   1
+              91                   1
+              92                   1
+              93                   1
+              94                   1
+              95                   1
+              96                   1
+              97                   1
+              98                   1
+              99                   1
+             100                   1
+1 n o d a l   b o u n d a r y   c o n d i t i o n          c o  d e s
+
+
+      node no.         dof1
+             101                   1
+             201                   1
+             302                   1
+             402                   1
+             503                   1
+             603                   1
+             704                   1
+             804                   1
+             905                   1
+            1005                   1
+            1106                   1
+            1206                   1
+            1307                   1
+            1407                   1
+            1508                   1
+            1608                   1
+            1709                   1
+            1809                   1
+            1910                   1
+            2010                   1
+            2111                   1
+            2211                   1
+            2312                   1
+            2412                   1
+            2513                   1
+            2613                   1
+            2714                   1
+            2814                   1
+            2915                   1
+            3015                   1
+            3116                   1
+            3216                   1
+            3317                   1
+            3417                   1
+            3518                   1
+            3618                   1
+            3719                   1
+            3819                   1
+            3920                   1
+            4020                   1
+            4121                   1
+            4221                   1
+            4322                   1
+            4422                   1
+            4523                   1
+            4623                   1
+            4724                   1
+            4824                   1
+            4925                   1
+            5025                   1
+1 n o d a l   b o u n d a r y   c o n d i t i o n          c o  d e s
+
+
+      node no.         dof1
+            5126                   1
+            5226                   1
+            5327                   1
+            5427                   1
+            5528                   1
+            5628                   1
+            5729                   1
+            5829                   1
+            5930                   1
+            6030                   1
+            6131                   1
+            6231                   1
+            6332                   1
+            6432                   1
+            6533                   1
+            6633                   1
+            6734                   1
+            6834                   1
+            6935                   1
+            7035                   1
+            7136                   1
+            7236                   1
+            7337                   1
+            7437                   1
+            7538                   1
+            7638                   1
+            7739                   1
+            7839                   1
+            7940                   1
+            8040                   1
+            8141                   1
+            8241                   1
+            8342                   1
+            8442                   1
+            8543                   1
+            8643                   1
+            8744                   1
+            8844                   1
+            8945                   1
+            9045                   1
+            9146                   1
+            9246                   1
+            9347                   1
+            9447                   1
+            9548                   1
+            9648                   1
+            9749                   1
+            9849                   1
+            9950                   1
+           10050                   1
+1 n o d a l   b o u n d a r y   c o n d i t i o n          c o  d e s
+
+
+      node no.         dof1      dof2
+               1                   1              1
+               2                   1              1
+               3                   1              1
+               4                   1              1
+               5                   1              1
+               6                   1              1
+               7                   1              1
+               8                   1              1
+               9                   1              1
+              10                   1              1
+              11                   1              1
+              12                   1              1
+              13                   1              1
+              14                   1              1
+              15                   1              1
+              16                   1              1
+              17                   1              1
+              18                   1              1
+              19                   1              1
+              20                   1              1
+              21                   1              1
+              22                   1              1
+              23                   1              1
+              24                   1              1
+              25                   1              1
+              26                   1              1
+              27                   1              1
+              28                   1              1
+              29                   1              1
+              30                   1              1
+              31                   1              1
+              32                   1              1
+              33                   1              1
+              34                   1              1
+              35                   1              1
+              36                   1              1
+              37                   1              1
+              38                   1              1
+              39                   1              1
+              40                   1              1
+              41                   1              1
+              42                   1              1
+              43                   1              1
+              44                   1              1
+              45                   1              1
+              46                   1              1
+              47                   1              1
+              48                   1              1
+              49                   1              1
+              50                   1              1
+1 n o d a l   b o u n d a r y   c o n d i t i o n          c o  d e s
+
+
+      node no.         dof1      dof2
+              51                   1              1
+              52                   1              1
+              53                   1              1
+              54                   1              1
+              55                   1              1
+              56                   1              1
+              57                   1              1
+              58                   1              1
+              59                   1              1
+              60                   1              1
+              61                   1              1
+              62                   1              1
+              63                   1              1
+              64                   1              1
+              65                   1              1
+              66                   1              1
+              67                   1              1
+              68                   1              1
+              69                   1              1
+              70                   1              1
+              71                   1              1
+              72                   1              1
+              73                   1              1
+              74                   1              1
+              75                   1              1
+              76                   1              1
+              77                   1              1
+              78                   1              1
+              79                   1              1
+              80                   1              1
+              81                   1              1
+              82                   1              1
+              83                   1              1
+              84                   1              1
+              85                   1              1
+              86                   1              1
+              87                   1              1
+              88                   1              1
+              89                   1              1
+              90                   1              1
+              91                   1              1
+              92                   1              1
+              93                   1              1
+              94                   1              1
+              95                   1              1
+              96                   1              1
+              97                   1              1
+              98                   1              1
+              99                   1              1
+             100                   1              1
+1 n o d a l   b o u n d a r y   c o n d i t i o n          c o  d e s
+
+
+      node no.         dof1      dof2
+             101                   1              1
+             102                   1              0
+             202                   1              0
+             203                   1              0
+             303                   1              0
+             304                   1              0
+             404                   1              0
+             405                   1              0
+             505                   1              0
+             506                   1              0
+             606                   1              0
+             607                   1              0
+             707                   1              0
+             708                   1              0
+             808                   1              0
+             809                   1              0
+             909                   1              0
+             910                   1              0
+            1010                   1              0
+            1011                   1              0
+            1111                   1              0
+            1112                   1              0
+            1212                   1              0
+            1213                   1              0
+            1313                   1              0
+            1314                   1              0
+            1414                   1              0
+            1415                   1              0
+            1515                   1              0
+            1516                   1              0
+            1616                   1              0
+            1617                   1              0
+            1717                   1              0
+            1718                   1              0
+            1818                   1              0
+            1819                   1              0
+            1919                   1              0
+            1920                   1              0
+            2020                   1              0
+            2021                   1              0
+            2121                   1              0
+            2122                   1              0
+            2222                   1              0
+            2223                   1              0
+            2323                   1              0
+            2324                   1              0
+            2424                   1              0
+            2425                   1              0
+            2525                   1              0
+            2526                   1              0
+1 n o d a l   b o u n d a r y   c o n d i t i o n          c o  d e s
+
+
+      node no.         dof1      dof2
+            2626                   1              0
+            2627                   1              0
+            2727                   1              0
+            2728                   1              0
+            2828                   1              0
+            2829                   1              0

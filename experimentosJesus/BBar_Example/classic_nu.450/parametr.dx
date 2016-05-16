@@ -1,0 +1,166 @@
+## OpenDX format File
+## OutPut Data  at Nodal Points in the
+## sense of Finite Element Method
+##==========================================
+##==========================================
+# 
+## Nodes locations
+# 
+object 1 class array type float rank 1 shape 2 items      85 data file "fnodes.stoc"
+# 
+## Connectivity
+# 
+object 2 class array type int rank 1 shape 4 items      64 data file "femesh.stoc"
+attribute "element type" string "quads"
+attribute "ref" string "positions"
+#  
+# Scalar field : Young Modulus
+object   3 class array type float rank 0 items       64 data file "youngmd.dat"
+ attribute "dep" string "connections"
+#  
+# Scalar field : Poisson Ratio
+object   4 class array type float rank 0 items       64 data file "poisson.dat"
+ attribute "dep" string "connections"
+#  
+# Scalar field : Permeability
+object   5 class array type float rank 0 items       64 data file "permeab.dat"
+ attribute "dep" string "connections"
+#  
+# Scalar field : Geo Prssure
+object   6 class array type float rank 0 items       64 data file "geoprsr.dat"
+ attribute "dep" string "connections"
+#  
+# Vector field : Displacements
+object   7 class array type float rank 1 shape 2 items      85 data file "displac.dat"
+attribute "dep" string "positions"
+#  
+# Scalar field : Init. Stress XX
+object   8 class array type float rank 0 items       64 data file "strs0xx.dat"
+ attribute "dep" string "connections"
+#  
+# Scalar field : Init. Stress YY
+object   9 class array type float rank 0 items       64 data file "strs0yy.dat"
+ attribute "dep" string "connections"
+#  
+# Scalar field : Init. Stress XY
+object  10 class array type float rank 0 items       64 data file "strs0xy.dat"
+ attribute "dep" string "connections"
+#  
+# Scalar field : Init. Stress ZZ
+object  11 class array type float rank 0 items       64 data file "strs0zz.dat"
+ attribute "dep" string "connections"
+#  
+# Next object is a member of the: 
+#   Scalar YOUNG series
+object    12 class field
+component "positions" value 1
+component "connections" value 2
+component "data" value     3
+#  
+# Next object is a member of the: 
+#   Scalar POISSON series
+object    13 class field
+component "positions" value 1
+component "connections" value 2
+component "data" value     4
+#  
+# Next object is a member of the: 
+#   Scalar PERMEABILITY series
+object    14 class field
+component "positions" value 1
+component "connections" value 2
+component "data" value     5
+#  
+# Next object is a member of the: 
+#   Scalar GEO PRESSURE series
+object    15 class field
+component "positions" value 1
+component "connections" value 2
+component "data" value     6
+#  
+# Next object is a member of the: 
+#   Scalar DISPLACEMENTS series
+object    16 class field
+component "positions" value 1
+component "connections" value 2
+component "data" value     7
+#  
+# Next object is a member of the: 
+#   Scalar INIT STRESS XX series
+object    17 class field
+component "positions" value 1
+component "connections" value 2
+component "data" value     8
+#  
+# Next object is a member of the: 
+#   Scalar INIT STRESS YY series
+object    18 class field
+component "positions" value 1
+component "connections" value 2
+component "data" value     9
+#  
+# Next object is a member of the: 
+#   Scalar INIT STRESS XY series
+object    19 class field
+component "positions" value 1
+component "connections" value 2
+component "data" value    10
+#  
+# Next object is a member of the: 
+#   Scalar INIT STRESS ZZ series
+object    20 class field
+component "positions" value 1
+component "connections" value 2
+component "data" value    11
+#  
+#  
+# Here we create the YOUNG MODULUS serie object
+object "young" class series
+member     0 value    12 position     0
+#  
+# Here we create the POISSON RATIO serie object
+object "poisson" class series
+member     0 value    13 position     0
+#  
+# Here we create the PERMEABILITY serie object
+object "permeability" class series
+member     0 value    14 position     0
+#  
+# Here we create the GEO PRESSURE serie object
+object "geoprsr" class series
+member     0 value    15 position     0
+#  
+# Here we create the DISPLACEMENTS serie object
+object "displacements" class series
+member     0 value    16 position     0
+#  
+# Here we create the INIT STRESS XX serie object
+object "strs0xx" class series
+member     0 value    17 position     0
+#  
+# Here we create the INIT STRESS YY serie object
+object "strs0yy" class series
+member     0 value    18 position     0
+#  
+# Here we create the INIT STRESS XY serie object
+object "strs0xy" class series
+member     0 value    19 position     0
+#  
+# Here we create the INIT STRESS ZZ serie object
+object "strs0zz" class series
+member     0 value    20 position     0
+#  
+# Structure of VARIAVEL OF DATA FILE
+object "campos" class group
+member "young" value "young"
+member "poisson" value "poisson"
+member "permeability" value "permeability"
+member "geoprsr" value "geoprsr"
+member "displacements" value "displacements"
+member "strs0xx" value "strs0xx"
+member "strs0yy" value "strs0yy"
+member "strs0xy" value "strs0xy"
+member "strs0zz" value "strs0zz"
+#  
+end
+#  

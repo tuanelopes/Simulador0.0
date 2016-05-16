@@ -1,0 +1,47 @@
+#REFERENCE LINES OF GEO-FORMATIONS
+#READ GEOFORMATIONS FROM elmnt_geoformation.in FILE (NOT=0/YES=1)
+0
+#TOP POST-SALT HORIZONTAL Y-AXIS
+2.00000000E+02
+#SALT-DOME TOP HORIZONTAL Y-AXIS
+2.00000000E+02
+#TOP RESERVOIR HORIZONTAL Y-AXIS
+2.00000000E+02
+#BOTTOM RESERVOIR HORIZONTAL Y-AXIS
+0.00000000E+00
+#BOTTOM RIFT HORIZONTAL Y-AXIS
+0.00000000E+00
+#LEFT RESERVOIR VERTICAL X-AXIS
+0.00000000E+00
+#RIGHT RESERVOIR VERTICAL X-AXIS
+5.00000000E+01
+#REFERENCE FOR SISMIC DOME (NOT=0/YES=1)
+0
+
+
+|----- top post salt horiz y axis ----------|
+|                                           |
+|              post_salt_rock               |
+|                                           |
+|----- salt dome top horiz y axis-----------|
+|                                           |
+|              saline_cap_rock              |
+|                                           |
+|------ top reservoir horiz y axis----------|
+|              |              |             |
+|              L              |             |
+|              E              R             |
+|    left      F  RESERVOIR   I   right     |
+|   burden     T  carbonate   G   burden    |
+|    rock      |    rock      H   rock      |
+|              |              T             |
+|            X axis         X axis          |
+|              |              |             |
+|----- bottom reservoir horiz y axis -------|
+|                                           |
+|              RIFT_UNDER_rock              |
+|                                           |
+|---------- bottom rift horzi y axis--------|
+
+
+#  SALT-DOME TOP HORIZONTAL Y-AXIS: -1.51670000E+03

@@ -1,0 +1,153 @@
+*type_process{
+SOLID_ONLY                                                                  
+}
+*title{
+PLANE STRAIN CANTILEVER BEAM: STATIC ANALYSIS WITH CONSISTENT NODAL FORCES                                                                 
+}
+*exec{                                                                                                                       
+       1
+}
+*iprtin{                                                                                                                     
+       0
+}
+*nsd{                                                                                                                        
+       2
+}
+*geomech{                                                                                                                    
+       1
+}
+*irregMesh{
+0
+}
+*Dirichlet{
+0
+}
+*Neumann{
+0
+}
+*I4SeaLoad{
+0
+}
+*numnp{                                                                                                                      
+     85
+}
+*numel{                                                                                                                      
+     64
+}
+*nelx{                                                                                                                       
+     16
+}
+*nely{                                                                                                                       
+      4
+}
+*numnpReserv{                                                                                                                
+        85
+}
+*numelReserv{                                                                                                                
+        64
+}
+*nelxReserv{                                                                                                                 
+        16
+}
+*nelyReserv{                                                                                                                 
+         4
+}
+*nlvectP{                                                                                                                    
+       1
+}
+*nlvectV{                                                                                                                    
+       1
+}
+*nlvectD{                                                                                                                    
+       1
+}
+*coordenadas_nodais{
+         1         4            0.0            0.0
+                               16.0            0.0
+                               16.0            2.0
+                                0.0            2.0
+        16         5         4         1
+         0
+}
+*codigos_cond_contorno_veloc{
+         1        16         1         1
+        17       116        33         1
+       133       148         1         1
+         0
+}
+*codigos_cond_contorno_desloc{
+         1                             1         1
+         5                             1         0
+         6        81         5         1         0
+         0
+}
+*valores_cond_contorno_veloc{
+        17         2          0.d+0
+                              0.d+0
+         3        33
+         0
+}
+*valores_cond_contorno_desloc{
+         2                 -7.50E-1        0.17383
+         3                 -1.50E+0        0.13867
+         4                 -2.25E+0        0.08008
+         5                  0.00E+0        0.01465
+        81                  0.00E+0       -0.09280
+        82                  0.00E+0       -0.17383
+        83                  0.00E+0       -0.13867
+        84                  0.00E+0       -0.08008
+        85                  0.00E+0       -0.01465
+         0
+}
+*ntype{                                                                                                                      
+       1
+}
+*numat{                                                                                                                      
+       1
+}
+*nen{                                                                                                                        
+       4
+}
+*nicode{
+       9
+}
+*material_properties{
+         1       1.00d+00  0.00     1.00d+0       
+}
+*constant_body_forces{
+       0.0    0.0E+0       0.0
+}
+*conectividades_nodais{
+         1         1         1         6         7         2        1
+        16         4         5         4         1         1
+         0
+}
+*conectividades_ladais{
+         1         1         1        18        34        17        1
+        16         1         1         4        16        33
+         0
+}
+*include{
+layer_reference.inc
+}
+*include{
+data.inc
+}
+*include{
+randfiles.inc
+}
+*include{
+SimulatorParam.inc
+}
+*include{
+NumericParam.inc
+}
+*include{
+geomechLayers.inc
+}
+*include{
+mcmc.inc
+}
+*include{
+CreepParameters.inc
+}

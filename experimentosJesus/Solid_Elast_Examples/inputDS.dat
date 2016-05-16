@@ -1,0 +1,141 @@
+*type_process{
+SOLID_ONLY
+}
+*title{
+Experimento: Corpo sujeito a Gravidade. Bloco 50mx200m; Malha 50x200
+}
+*exec{
+         1
+}
+*iprtin{
+         0
+}
+*nsd{
+         2
+}
+*geomech{
+         1
+}
+*irregMesh{
+         0
+}
+*Dirichlet{
+         0
+}
+*Neumann{
+         0
+}
+*I4SeaLoad{
+         0
+}
+*numnp{
+      10251
+}
+*numel{
+      10000
+}
+*nelx{
+       200
+}
+*nely{
+        50
+}
+*numnpReserv{
+     10251
+}
+*numelReserv{
+     10000
+}
+*nelxReserv{
+       200
+}
+*nelyReserv{
+        50
+}
+*nlvectP{
+         1
+}
+*nlvectV{
+         1
+}
+*nlvectD{
+         1
+}
+*coordenadas_nodais{
+         1         4       0.0       0.0
+                          50.0       0.0
+                          50.0     200.0
+                           0.0     200.0
+        50         1       200        51
+         0
+}
+*codigos_cond_contorno_veloc{
+         1        50         1         1   
+        51     20150       101         1
+     20201     20250         1         1
+         0
+}
+*codigos_cond_contorno_desloc{
+         1     10201        51         1         0
+        51     10251        51         1         0
+     10201     10251         1         1         1
+         0
+}
+*valores_cond_contorno_veloc{
+        51         2     1.d-0
+                         1.d-0
+       199       101
+         0
+}
+*valores_cond_contorno_desloc{
+         0
+}
+*ntype{
+         1
+}
+*numat{
+         1
+}
+*nen{
+         4
+}
+*nicode{
+         9
+}
+*material_properties{
+         1       1.00d+00  0.00     1.00d+0   
+}
+*constant_body_forces{
+       0.0   -1.0E+1       0.0
+}
+*conectividades_nodais{
+         1         1         1         2        53        52        1
+        50         1         1       200        50        51
+         0
+}
+*conectividades_ladais{
+         1         1         1        52       102        51        1 
+        50         1         1       200        50       101
+         0
+}
+*include{
+layer_reference.inc
+}
+*include{
+data.inc
+}
+*include{
+randfiles.inc
+}
+*include{
+geomechLayers.inc
+}
+*include{
+NumericParam.inc
+}
+*include{
+mcmc.inc
+}
+*include{
+SimulatorParam.inc
+}

@@ -1,0 +1,16 @@
+## OpenDX format File
+## OutPut Data  at Nodal Points in the
+## sense of Finite Element Method
+##==========================================
+##==========================================
+# 
+## Nodes locations
+# 
+object 1 class array type float rank 1 shape 2 items   10251 data file "fnodes.stoc"
+# 
+## Connectivity
+# 
+object 2 class array type int rank 1 shape 4 items   10000 data file "femesh.stoc"
+attribute "element type" string "quads"
+attribute "ref" string "positions"
+#  

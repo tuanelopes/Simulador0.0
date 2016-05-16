@@ -1,0 +1,141 @@
+*type_process{
+TERZAGHI
+}
+*title{
+Parabolic - Condicoes de contorno - fluxo na pressao 100x50 - penalty
+}
+*exec{                                                                                                                       
+       1
+}
+*iprtin{                                                                                                                     
+       0
+}
+*nsd{                                                                                                                        
+       2
+}
+*geomech{                                                                                                                    
+       1
+}
+*irregMesh{
+0
+}
+*Dirichlet{
+0
+}
+*Neumann{
+0
+}
+*I4SeaLoad{
+0
+}
+*numnp{                                                                                                                      
+   5151
+}
+*numel{                                                                                                                      
+   5000
+}
+*nelx{                                                                                                                       
+     100
+}
+*nely{                                                                                                                       
+      50
+}
+*numnpReserv{                                                                                                                
+    5151
+}
+*numelReserv{                                                                                                                
+    5000
+}
+*nelxReserv{                                                                                                                 
+     100
+}
+*nelyReserv{                                                                                                                 
+      50
+}
+*nlvectP{                                                                                                                    
+       1
+}
+*nlvectV{                                                                                                                    
+       1
+}
+*nlvectD{                                                                                                                    
+       1
+}
+*coordenadas_nodais{
+         1         4            0.0            0.0
+                               20.0            0.0
+                               20.0           10.0
+                                0.0           10.0
+       100         1        50       101
+         0
+}
+*codigos_cond_contorno_veloc{
+         1       100         1         1
+       101      9950       201         1
+       201     10050       201         1
+         0
+}
+*valores_cond_contorno_veloc{
+         0
+}
+*codigos_cond_contorno_desloc{
+         1      5051       101         1         0
+       101      5151       101         1         0
+      5052      5050         1         0         0
+         1       101         1         1         1
+         0
+}
+*valores_cond_contorno_desloc{
+      5052         2      0.000E+00       -2.00E+0
+                          0.000E+00       -2.00E+0
+        99         1
+      5051                0.000E+00       -1.00E+0
+      5151                0.000E+00       -1.00E+0
+         0
+}
+*ntype{                                                                                                                      
+       1
+}
+*numat{                                                                                                                      
+       1
+}
+*nen{                                                                                                                        
+       4
+}
+*nicode{
+       9
+}
+*material_properties{
+         1       1.00d+00  0.00     2.00d+09       
+}
+*constant_body_forces{
+       0.0       0.0       0.0
+}
+*conectividades_nodais{
+         1         1         1         2       103       102        1
+       100         1         1        50       100       101
+         0
+}
+*conectividades_ladais{
+         1         1         1       102       202       101        1 
+       100         1         1        50       100       201
+         0
+}
+*include{
+layer_reference.inc
+}
+*include{
+data.inc
+}
+*include{
+randfiles.inc
+}
+*include{
+SimulatorParam.inc
+}
+*include{
+NumericParam.inc
+}
+*include{
+geomechLayers.inc
+}

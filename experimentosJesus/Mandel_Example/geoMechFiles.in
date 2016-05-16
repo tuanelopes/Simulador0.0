@@ -1,0 +1,26 @@
+# Files with Geological Formations
+./reservoir_rock.in
+./rift_under_rock.in
+./right_burden_rock.in
+./saline_cap_rock.in
+./left_burden_rock.in
+./post_salt_rock.in
+
+|-------------------------------------------|
+|                                           |
+|              POST_SALT_ROCK               |
+|                                           |
+|-------------------------------------------|
+|                                           |
+|              SALINE_CAP_ROCK              |
+|                                           |
+|-------------------------------------------|
+|              |              |             |
+|    LEFT      |  RESERVOIR   |   RIGHT     |
+|   BURDEN     |  CARBONATE   |   BURDEN    |
+|    ROCK      |    ROCK      |   ROCK      |
+|-------------------------------------------|
+|                                           |
+|              RIFT_UNDER_ROCK              |
+|                                           |
+|-------------------------------------------|

@@ -1,0 +1,151 @@
+*type_process{
+MANDEL
+}
+*title{
+Exper. Mandel; Reservatorio Tese Gai with Wheeler; Malha Total 100x10
+}
+*exec{
+         1
+}
+*iprtin{
+         0
+}
+*nsd{
+         2
+}
+*geomech{
+         1
+}
+*irregMesh{
+         0
+}
+*Dirichlet{
+         0
+}
+*Neumann{
+         0
+}
+*I4SeaLoad{
+         0
+}
+*numnp{
+      1111
+}
+*numel{
+      1000
+}
+*nelx{
+       100
+}
+*nely{
+        10
+}
+*numnpReserv{
+      1111
+}
+*numelReserv{
+      1000
+}
+*nelxReserv{
+       100
+}
+*nelyReserv{
+        10
+}
+*nlvectP{
+       1
+}
+*nlvectV{
+       1
+}
+*nlvectD{
+       1
+}
+*coordenadas_nodais{
+         1         4            0.0            0.0
+                              100.0            0.0
+                              100.0           10.0
+                                0.0           10.0
+       100         1        10       101
+         0
+}
+*0coordenadas_nodais{
+         1        4       0.0       0.0
+                        100.0       0.0
+                        100.0      10.0
+                          0.0      10.0
+       100         1        10       101
+         0
+}
+*codigos_cond_contorno_veloc{
+         1       100         1         1
+       101      1910       201         1
+      2011      2110         1         1
+         0
+}
+*valores_cond_contorno_veloc{
+         0
+}
+*codigos_cond_contorno_desloc{
+         1      1011       101         1         0
+       101      1111       101         0         0
+      1011      1111         1         0         1
+         1       101         1         0         1
+         1         1         1         1         1
+         0
+}
+*valores_cond_contorno_desloc{
+       101         2        0.00E+0        0.00E+0
+                            0.00E+0        0.00E+0
+        10       101
+         0
+}
+*ntype{
+         1
+}
+*numat{
+         1
+}
+*nen{
+         4
+}
+*nicode{
+         9
+}
+*material_properties{
+         1       1.00d+00  0.00     1.00d+0       
+}
+*constant_body_forces{
+       0.0       0.0       0.0
+}
+*conectividades_nodais{
+         1         1         1         2       103       102        1
+       100         1         1        10       100       101
+         0
+}
+*conectividades_ladais{
+         1         1         1       102       202       101        1
+       100         1         1        10       100       201
+         0
+}
+*include{
+layer_reference.inc
+}
+*include{
+data.inc
+}
+*include{
+randfiles.inc
+}
+*include{
+geomechLayers.inc
+}
+*include{
+NumericParam.inc
+}
+*include{
+mcmc.inc
+}
+*include{
+SimulatorParam.inc
+}
