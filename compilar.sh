@@ -104,10 +104,12 @@ case $maquina in
 ;;
 
 "no41.hpc.lncc.br")
+     LAPACK_DIR=/hpc/lapack-3.6.0-k20
      PARDISO_DIR="/hpc/pardiso5.0"
   if [ "$FC" = "gfortran" ]; then
      comando="source /hpc/modulos/bash/gcc-4.7.sh";          echo $comando; eval $comando
      comando="source /hpc/modulos/bash/hypre-2.9.0b-k20.sh"; echo $comando; eval $comando
+     comando="source /hpc/modulos/bash/libblas-k20.sh"     ; echo $comando; eval $comando
      HYPRE_DIR="/hpc/hypre-2.9.0b-babel-k20"  # k20, gcc 
   fi
   if [ "$FC" = "ifort" ]; then
@@ -131,7 +133,7 @@ case $solver in
     FC=gfortran
     comando="export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/hpc/pardiso5.0/"; eval $comando
     PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-MPI-GNU472-X86-64 -lblas -llapack -fopenmp -lpthread -lm" 
-    PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-GNU472-X86-64     -lblas -llapack -fopenmp -lpthread -lm" 
+    PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-GNU472-X86-64 -L${LAPACK_DIR}     -lblas -llapack -fopenmp -lpthread -lm" 
   fi
   if [ "$FC" = "ifort" ]; then
     FC=ifort
@@ -139,7 +141,7 @@ case $solver in
        PARDISOLNK="-mkl"; 
     else
        PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-MPI-INTEL1301-X86-64 -lblas -llapack -fopenmp -lpthread -lm" 
-       PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-INTEL1301-X86-64     -lblas -llapack -fopenmp -lpthread -lm" 
+       PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-INTEL1301-X86-64  -L${LAPACK_DIR}    -lblas -llapack -fopenmp -lpthread -lm" 
     fi
   fi
    comando="LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PARDISO_DIR}"; eval $comando
@@ -167,7 +169,7 @@ case $solver in
   HYPRE_INC="${HYPRE_DIR}/include/"
   if [ "$FC" = "gfortran" ]; then
     FC=mpif90
-    PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-GNU472-X86-64     -lblas -llapack -fopenmp -lpthread -lm"
+    PARDISOLNK="-L${PARDISO_DIR} -lpardiso500-GNU472-X86-64 -L${LAPACK_DIR} -lblas -llapack -fopenmp -lpthread -lm"
     LIBS="${HYPRELNK} ${PARDISOLNK} "; 
   fi
   if [ "$FC" = "ifort" ]; then

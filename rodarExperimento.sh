@@ -1,8 +1,8 @@
 dirExp=${1:-"exp05x02/"}
-opcaoA=${2:-"1"}
-opcaoB=${3:-"1"}
-opcaoC=${4:-"1"}
-numThreads=${5:-"1"}
+numThreads=${2:-"1"}
+opcaoA=${3:-"1"}
+opcaoB=${4:-"1"}
+opcaoC=${5:-"1"}
 sufixoTela=${6:-""};
 
 dirBin=/prj/prjedlg/bidu/BTsimuladorMEFacademico/bin
@@ -123,6 +123,7 @@ comando="(export OMP_NUM_THREADS=1;time mpirun -np 2 ${dirBin}/${nomeExecutavel}
 comando="(export OMP_NUM_THREADS=1;time ${dirBin}/${nomeExecutavel} <resp |tee -a ${arqTela}.txt)";
 comando="(export OMP_NUM_THREADS=1;time mpirun -np 1 ${dirBin}/${nomeExecutavel} <resp  |tee -a ${arqTela}.txt)";
 comando="(cd $dirExp; export OMP_NUM_THREADS=1; time mpiexec -np 1 ${dirBin}/${nomeExecutavel} <resp|tee -a ${arqTela}.txt)";
+comandoT="( time sleep 1  |tee -a ${arqTela}.txt)";
 comando="(export OMP_NUM_THREADS=$numThreads; cd $dirExp ; time ${dirBin}/${nomeExecutavel}   |tee -a ${arqTela}.txt)";
 echo $comando |tee -a $dirExp/${arqTela}.txt
 #read
@@ -130,9 +131,10 @@ formato="\"\t%E real,\t%U user,\t%S sys\" "
 #echo $formato
 #time -f $formato eval $comando 2> tempoMedido.txt
 dataInicio=$(date)
-eval $comando &> tempoMedido.txt
+eval $comando 2> tempoMedido.txt
 dataFinal=$(date)
-echo +++ inicio da simulacao: $dataInicio |tee -a $dirExp/${arqTela}.txt
-echo +++ fim .. da simulacao: $dataFinal  |tee -a $dirExp/${arqTela}.txt
-cat tempoMedido.txt; rm tempoMedido.txt
+echo " +++ inicio da simulacao: $dataInicio" |tee -a $dirExp/${arqTela}.txt
+echo " +++ fim .. da simulacao: $dataFinal " |tee -a $dirExp/${arqTela}.txt
+cat tempoMedido.txt                          |tee -a $dirExp/${arqTela}.txt; 
+rm tempoMedido.txt
 
