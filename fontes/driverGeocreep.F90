@@ -83,7 +83,7 @@ end program reservoirSimulator
 !
       subroutine preprocessador_DS()
 !
-      use mGlobaisArranjos,  only: title, availableSolvers
+      use mGlobaisArranjos,  only: title, listaSolverDisponivel
       use mGlobaisEscalares
       use mGeomecanica, only: ndofD, nlvectD , CYLINDER, SOLIDONLY
       use mHidrodinamicaRT, only: ndofV, nlvectV, nlvectP, ndofP 
@@ -147,49 +147,23 @@ end program reservoirSimulator
       CYLINDER  = .FALSE.
       SALTCREEP = .FALSE.
       SOLIDONLY = .FALSE.
-      availableSolvers=.false.
-      
+
       optSolverV='skyline'
       optSolverD='skyline'
       
       open(unit=ifdata, file= 'inputDS.dat'  )
       call readInputFileDS(ifdata)
-      call readSetupPhaseDS(nlvectV, nlvectP, nlvectD, optSolverV, optSolverD)
-    
-      availableSolvers(1)=.true. !skyline
-#ifdef withPardiso
-      availableSolvers(2)=.true. !pardiso
-#endif
-#ifdef withHYPRE
-      availableSolvers(3)=.true. !hypre
-#endif
-
-     if(optSolverV=='pardiso'.or.optSolverD=='pardiso')then
-        if(availableSolvers(2).eqv..false.) then
-           print*, "O Solver escolhido (Pardiso) não está disponível"
-           print*, "Solvers disponiveis:"
-           print*, "                      SKYLINE"
-           if(availableSolvers(3).eqv..true.) print*, "                      HYPRE"
-           stop
-        endif
-     endif
-     if(optSolverV=='hypre'.or.optSolverD=='hypre')then
-        if(availableSolvers(3).eqv..false.) then
-           print*, "O Solver escolhido (HYPRE) não está disponível"
-           print*, "Solvers disponiveis:"
-           print*, "                      SKYLINE"
-           if(availableSolvers(2).eqv..true.) print*, "                      PARDISO"
-           stop
-        endif
-     endif
-
+      call readSetupPhaseDS(nlvectV, nlvectP, nlvectD, optSolverV, optSolverD)     
+      
+      call identificaSolversDisponiveis(listaSolverDisponivel)
+      call verificarSolver(optSolverV, listaSolverDisponivel)
+      call verificarSolver(optSolverD, listaSolverDisponivel) 
       write(*,9001)  optSolverV, optSolverD
 
       if(optSolverV=="pardiso") simetriaVel=.true.
       if(optSolverD=="pardiso") simetriaGeo=.true.
       if(optSolverV=="hypre") simetriaVel=.false.
       if(optSolverD=="hypre") simetriaGeo=.false.
-     
 !
 !.... STRESS DIMENSION PHISICS: S3DIM
 !
@@ -353,13 +327,61 @@ end program reservoirSimulator
      &' Multiply Sea Load on Neumann Conditions (I4SeaLoad) = ',I2/5X,&
      &'    eq. 0, Not Multiply by External Load               ',   /5x,&
      &'    eq. 1, Multiply by External Load                   ',  //)
- 9001  FORMAT("Solver para a solucao do sistema de equacoes: Hidro:",A7, ", Geo:", A7)
+ 9001  FORMAT("Solvers escolhidos para a solucao do sistema de equacoes: Hidro:",A7, ", Geo:", A7)
 !5x,&
 !     &' Integer to Read Curve Dome Profile      (IDome    ) = ',I2/5X,&
 !     &'    eq. 0, Not Read Sismic Profile for Dome            ',   /5x,&
 !     &'    eq. 1, Read Sismic Profile for Dome                '//)
 !
       end subroutine preprocessador_DS
+!
+!**** new *******************************************************************
+!     
+      subroutine verificarSolver(optSolver_, listaSolverDisponivel_) 
+!
+         character(len=7), intent(in) :: optSolver_
+         logical, intent(in) :: listaSolverDisponivel_(*)
+!
+         if(optSolver_=='pardiso')then
+            if (listaSolverDisponivel_(2).eqv..false.) then
+               print*, "O Solver escolhido ...,  ", optSolver_,",  não está disponível"
+               stop
+            endif
+         endif
+
+         if(optSolver_=='hypre') then
+            if(listaSolverDisponivel_(3).eqv..false.) then
+               print*, "O Solver escolhido ...,  ", optSolver_, ",  não está disponível"
+               stop
+            endif
+         endif
+    
+      end subroutine      
+!
+!**** new *******************************************************************
+!     
+      subroutine identificaSolversDisponiveis(listaSolverDisponivel_)
+      
+      logical, intent(inout) :: listaSolverDisponivel_(*)
+         
+      listaSolverDisponivel_(1)=.true. !skyline
+#ifdef withPardiso
+      listaSolverDisponivel_(2)=.true. !pardiso
+#else
+      listaSolverDisponivel_(2)=.false. !pardiso
+#endif
+#ifdef withHYPRE
+      listaSolverDisponivel_(3)=.true. !hypre
+#else
+      listaSolverDisponivel_(3)=.false. !hypre
+#endif
+
+      print*, "Solvers disponiveis:"
+      print*, "                      SKYLINE"
+      if(listaSolverDisponivel_(2).eqv..true.) print*, "                      PARDISO"
+      if(listaSolverDisponivel_(3).eqv..true.) print*, "                      HYPRE"
+
+      end subroutine
 !
 !**** new *******************************************************************
 !
@@ -1213,7 +1235,7 @@ end program reservoirSimulator
       use mGlobaisEscalares, only: nnp, nrowsh
       use mGlobaisEscalares, only: tempoMontagemGeo, tempoSolverGeo
       use mTransporte,       only: satElemAnt, satElem
-      use mSolverPardiso,    only: solverPardisoEsparso, escreverSistemaAlgCSRemMTX
+      use mSolverPardiso,    only: solverPardisoCSR, escreverSistemaAlgCSRemMTX
       use mSolverGaussSkyline, only: solverGaussSkyline
       use mSolverHypre
       use mSolverHypre, only: destruirMatriz_HYPRE, criarMatriz_HYPRE  
@@ -1279,10 +1301,10 @@ end program reservoirSimulator
       if (optSolverD=='pardiso') then
          write(*,'(2a)') ' direto ', optSolverD
         if(NNP==0) &
-        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'reor')
+        call solverPardisoCSR(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'reor')
         
-        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'fact')
-        call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
+        call solverPardisoCSR(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'fact')
+        call solverPardisoCSR(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
       endif
 ! 
       if(optSolverD=='hypre') then
@@ -1347,8 +1369,8 @@ end program reservoirSimulator
 !
       IF (optSolverD=='pardiso') then
          write(*,'(2a)') ' direto ', optSolverD
-         call escreverSistemaAlgCSRemMTX(alhsD, brhsD, ApGeo, AiGeo,  nalhsD, neqD, "sistemaPardisoGeo300.mtx")
-         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
+!        call escreverSistemaAlgCSRemMTX(alhsD, brhsD, ApGeo, AiGeo,  nalhsD, neqD, "sistemaPardisoGeo300.mtx")
+         call solverPardisoCSR(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
       endif
 
       if(optSolverD=='hypre') then
@@ -1375,8 +1397,8 @@ end program reservoirSimulator
 
          call destruirVetor_HYPRE(b_HYPRE_G)
          call destruirVetor_HYPRE(u_HYPRE_G)
-         call destruirMatriz_HYPRE(A_HYPRE_G)
-         call criarMatriz_HYPRE  (A_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
+         !call destruirMatriz_HYPRE(A_HYPRE_G)
+         !call criarMatriz_HYPRE  (A_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
 
@@ -1417,9 +1439,9 @@ end program reservoirSimulator
 #endif
      tempoMontagemGeo=tempoMontagemGeo+(t2-t1)
 
-      write(*,*) " 400 continue, valores nos extremos do vetor BRHS geo,  "
-      write(*,'(6e16.8)') brhsD(1    :6)
-      write(*,'(6e16.8)') brhsD(neqD-5: neqD)
+!     write(*,*) " 400 continue, valores nos extremos do vetor BRHS geo,  "
+!     write(*,'(6e16.8)') brhsD(1    :6)
+!     write(*,'(6e16.8)') brhsD(neqD-5: neqD)
 
 !
 !.... COMPUTE RESIDUAL EUCLIDEAN NORM
@@ -1441,8 +1463,8 @@ end program reservoirSimulator
 
       if (optSolverD=='pardiso') then
          write(*,'(2a)') ' direto ', optSolverD
-         call escreverSistemaAlgCSRemMTX(alhsD, brhsD, ApGeo, AiGeo,  nalhsD, neqD, "sistemaPardisoGeo400.mtx")
-         call solverPardisoEsparso(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'full')
+!        call escreverSistemaAlgCSRemMTX(alhsD, brhsD, ApGeo, AiGeo,  nalhsD, neqD, "sistemaPardisoGeo400.mtx")
+         call solverPardisoCSR(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'full')
       endif
       
       if(optSolverD=='hypre') then

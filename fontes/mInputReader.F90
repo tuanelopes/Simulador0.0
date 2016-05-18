@@ -583,7 +583,7 @@ module mInputReader
          read(file_lines(nLinhaArqInput:),1000) m,mgen,(temp(i,j),i=1,nra)
          nLinhaArqInput = nLinhaArqInput + 1
 
-        if (mgen.ne.0) temp(1:nra,j)=a(1:nra,m)         !B
+        if (mgen.ne.0) temp(1:nra,j)=a(1:nra,m) 
          200    continue
          read(file_lines(nLinhaArqInput:),2000) (ninc(i),inc(i),i=1,3)
          nLinhaArqInput = nLinhaArqInput + 1

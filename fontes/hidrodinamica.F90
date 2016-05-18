@@ -66,7 +66,7 @@
       use mPropGeoFisica,    only : phi, phi0, nelx, nely, nelz
       use mPropGeoFisica,    only : calcphi, hx, hy
       use mPropGeoFisica,    only : permkx, xkkc, xltGeo
-      use mSolverPardiso,    only : solverPardisoEsparso
+      use mSolverPardiso,    only : solverPardisoCSR
       
       use mSolverGaussSkyline, only : solverGaussSkyline
       use mSolverHypre
@@ -125,7 +125,7 @@
 !
       if (optSolverV=='pardiso') then
          write(*,'(2a)') ' direto ', optSolverV
-         call solverPardisoEsparso(alhsV, brhsV, ApVel, AiVel, ptV, iparmV, dparmV,  &
+         call solverPardisoCSR(alhsV, brhsV, ApVel, AiVel, ptV, iparmV, dparmV,  &
      &        neqV, nalhsV, simetriaVel, 'vel', 'full')
       end if
 !

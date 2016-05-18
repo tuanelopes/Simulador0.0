@@ -30,7 +30,7 @@
         real*8, allocatable  :: grav(:), bf(:,:), c(:,:)
 
         real*8, allocatable  :: beta(:)
-        logical :: availableSolvers(3)
+        logical :: listaSolverDisponivel(3)
         
       end module mGlobaisArranjos
 !

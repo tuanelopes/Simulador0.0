@@ -628,8 +628,8 @@
           call adicionarValoresVetor_HYPRE(b_HYPRE_G, 1, neqD, rows_G, BRHSD)   ! elast
                                                                    ! elast
         ! call fecharMatriz_HYPRE            (A_HYPRE_G, parcsr_A_G)   ! elast
-          call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   )   ! elast
-          call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )   ! elast
+        ! call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   )   ! elast
+        ! call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )   ! elast
 
        end if   ! elast
        
@@ -2406,8 +2406,8 @@
           end do 
           
          call adicionarValoresVetor_HYPRE(b_HYPRE_G, 1, neqD, rows_G, BRHSD)
-         call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   )  ! creep
-         call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )  ! creep
+       ! call fecharVetor_HYPRE             (b_HYPRE_G, par_b_G   )  ! creep
+       ! call fecharVetor_HYPRE             (u_HYPRE_G, par_u_G   )  ! creep
       endif
       
 

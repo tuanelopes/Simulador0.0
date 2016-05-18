@@ -9,44 +9,8 @@
 !
 !=======================================================================
 !    
-      subroutine solverPardisoEsparso(alhs, b, Ap, Ai, pt_, iparm_, dparm_, neq, nonzeros, &
+      subroutine solverPardisoCSR(a, b, ia, ja, pt_, iparm_, dparm_, neq, nonzeros, &
      &                                            simetria, label,parte)
-
-      
-      implicit none 
-!
-      real*8  :: alhs(*), b(neq)
-      integer :: Ap(*), Ai(*)
-      integer, intent(in) :: neq, nonzeros
-      logical, intent(in) :: simetria
-      character(LEN=3) :: label
-      character(LEN=4) :: parte
-      INTEGER pt_(64), iparm_(64)
-      REAL*8  dparm_(64)
-! 
-      real*8, allocatable  :: xGeo(:), xVel(:)
-
-      if(label=='vel') then
-         if(.not.allocated(xVel)) allocate(xVel(neq))
-         xVel=0.d0
-         call solverPardisoPPD(Ap, Ai, pt_, iparm_, dparm_, alhs, xVel, b, neq, nonzeros, simetria, label,parte)
-      endif
-
-      
-      if(label=='geo') then
-         if(.not.allocated(xGeo)) allocate(xGeo(neq))
-         xGeo=0.d0
-         call solverPardisoPPD(Ap, Ai, pt_, iparm_, dparm_, alhs, xGeo, b, neq, nonzeros, simetria, label,parte)
-      endif   
-           
-
-      end subroutine solverPardisoEsparso
-!
-!=======================================================================
-!  
-      subroutine solverPardisoPPD(ia, ja, pt_, iparm_, dparm_, a, x, b, neq, nonzeros, simetria, label, parte)
-
-      implicit none
 !
         INTEGER, intent(in)  ::  ia(neq+1), ja(nonzeros)
         INTEGER pt_(64), iparm_(64)
@@ -54,12 +18,12 @@
         
         REAL*8, INTENT(IN)   :: a(nonzeros)
         REAL*8, INTENT(INOUT):: b(neq)
-        REAL*8, INTENT(INOUT)  :: x(neq)
         INTEGER, INTENT(IN)  :: NEQ, NONZEROS
         LOGICAL, INTENT(IN)  :: simetria
         character(LEN=3), INTENT(IN) :: label
         character(LEN=4), INTENT(IN) :: parte
 !
+        REAL*8, allocatable  :: x(:)
         REAL*8,  save :: ddum
         INTEGER, save :: maxfct, mnum, mtype, phase, nrhs, error,  msglvl
         INTEGER, save :: idum, solver
@@ -68,6 +32,8 @@
         integer :: omp_get_num_threads
 !
 #ifdef withPardiso
+
+       allocate(x(neq))
 !
 !  .. Setup Pardiso control parameters und initialize the solvers     
 !     internal adress pointers. This is only necessary for the FIRST   
@@ -192,50 +158,30 @@
 !       WRITE(*,*) 'Solve completed ...  ',label, ", tempo =", tt2-tt1
 ! #endif
 
+      deallocate(x)
 
-!!!!!!!!!!  ITERATIVO  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! 
-! 
-!        WRITE(*,*) 'Precondicionador  ... '
-
-!        msglvl = 0 !0 para nao imprimir as estatisticas
-!        solver    = 1
-!        iparm(4)=0
-!        phase = 12 ! set up of the preconditioner
-!        CALL pardiso (pt , maxfct , mnum , mtype , phase , neq, a, ia , ja ,& 
-!         idum , nrhs , iparm , msglvl , ddum , ddum , error , dparm )
-! 
-! 
-! ! .. Iterative Solve
-!        WRITE(*,*) 'solver ... '
-!        iparm(4) = 61
-!        phase = 23 ! only solve
-!        CALL pardiso (pt , maxfct , mnum , mtype , phase , neq, a, ia , ja , &
-!           idum , nrhs , iparm , msglvl , b, x, error , dparm )
-! 
-!          tt2 = omp_get_wtime( );
-!       WRITE(*,*) 'Solve completed ...  ', tt2-tt1
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!       desalocando memoria
-!       WRITE(*,*) 'Begining memory desalocation  ... '
-!       call timing(t1)
-!       phase = -1
-!       CALL pardiso (pt_, maxfct, mnum, mtype, phase, neq, a, ia, ja, &
-!                    idum, nrhs, iparm_, msglvl, b, x, error, dparm_)
-!       call timing(t2)
-! #ifdef mostrarTempos
-!       write(*,*) "memory desalocation: ", label, ", tempo = ", t2 - t1
-! #endif
-
-!       b(1:neq) = x(1:neq)
 
       endif !if(parte=='back'.or. parte=='full') then
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+       if(parte=='desl'.or. parte=='full') then
+
+!       desalocando memoria
+           WRITE(*,*) 'Begining memory desalocation  ... '
+           call timing(t1)
+           phase = -1
+           CALL pardiso (pt_, maxfct, mnum, mtype, phase, neq, a, ia, ja, &
+                        idum, nrhs, iparm_, msglvl, b, x, error, dparm_)
+            call timing(t2)
+#ifdef mostrarTempos
+            write(*,*) "memory desalocation: ", label, ", tempo = ", t2 - t1
+#endif
+        endif
+
 #endif
 
-      end subroutine solverPardisoPPD
+      end subroutine solverPardisoCSR
 !
 !=======================================================================
 !    
