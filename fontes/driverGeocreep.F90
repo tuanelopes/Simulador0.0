@@ -1263,8 +1263,8 @@ end program reservoirSimulator
 !
 
       solver_id_G  = 1
-      precond_id_G = 1
-      tol = 1.0e-08
+      precond_id_G = 2
+      tol = 1.0e-12
 
       DO 10 I=1,9
          IF (FASE.EQ.REFTASK(I)) J=I
@@ -1295,44 +1295,18 @@ end program reservoirSimulator
       if (optSolverD=='skyline') then
          write(*,'(2a)') ' direto ', optSolverD
          call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'fact')
-         call solverGaussSkyline(alhsD,brhsD,idiagD,nalhsD,neqD, 'back')
       end if
 !
       if (optSolverD=='pardiso') then
          write(*,'(2a)') ' direto ', optSolverD
         if(NNP==0) &
         call solverPardisoCSR(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'reor')
-        
         call solverPardisoCSR(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'fact')
-        call solverPardisoCSR(alhsD, brhsD, ApGeo, AiGeo, ptD, iparmD, dparmD, neqD, nalhsD, simetriaGeo, 'geo', 'back')
       endif
 ! 
       if(optSolverD=='hypre') then
          write(*,'(2a)') ' iterativo ', optSolverD
-
          call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
-         call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
-         call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
-
-         if(.not.allocated(initialGuess_G)) then
-            allocate(initialGuess_G(neqD)); initialGuess_G=0.0
-         endif
-       
-         call resolverSistemaAlgHYPRE (A_HYPRE_G, parcsr_A_G, b_HYPRE_G, par_b_G, u_HYPRE_G, par_u_G, &
-                                   solver_G, solver_id_G, precond_id_G, tol,    &
-                                   num_iterations, final_res_norm, initialGuess_G, brhsD, rows_G, neqD, myid, mpi_comm)
-
-         call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
-         initialGuess_G=brhsD
-
-
-         call destruirVetor_HYPRE(b_HYPRE_G)
-         call destruirVetor_HYPRE(u_HYPRE_G)
-!         call destruirMatriz_HYPRE(A_HYPRE_G)
-!         call criarMatriz_HYPRE  (A_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
-         call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
-         call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
-
       endif
 !
       call timing(t2)
@@ -1376,7 +1350,6 @@ end program reservoirSimulator
       if(optSolverD=='hypre') then
          write(*,'(2a)') ' iterativo ', optSolverD
 
-         call fecharMatriz_HYPRE    (A_HYPRE_G, parcsr_A_G )
          call fecharVetor_HYPRE     (b_HYPRE_G, par_b_G )
          call fecharVetor_HYPRE     (u_HYPRE_G, par_u_G )
 
@@ -1394,17 +1367,11 @@ end program reservoirSimulator
          call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
          initialGuess_G=brhsD
 
-
          call destruirVetor_HYPRE(b_HYPRE_G)
          call destruirVetor_HYPRE(u_HYPRE_G)
-         !call destruirMatriz_HYPRE(A_HYPRE_G)
-         !call criarMatriz_HYPRE  (A_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (b_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
          call criarVetor_HYPRE   (u_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
-
       endif
-
-
 !
 !.... UPDATE DISPLACEMENT 
 ! 
@@ -1426,9 +1393,6 @@ end program reservoirSimulator
 400   CONTINUE     !.... fase=='GEOMECHANICS_CREEP'
 
 
-!      call destruirMatriz_HYPRE(A_HYPRE_G)
-!      call criarMatriz_HYPRE (A_HYPRE_G, Clower_G, Cupper_G, mpi_comm )
-!
       call timing(t1)
       call montarSistEqAlgGEO('bbarmatrix_creep',satElem)
       call timing(t2)
@@ -1492,7 +1456,6 @@ end program reservoirSimulator
          call extrairValoresVetor_HYPRE(u_HYPRE_G, 1, neqD, rows_G,BRHSD)
          initialGuess_G=brhsD
 
-
          call destruirVetor_HYPRE(b_HYPRE_G)
          call destruirVetor_HYPRE(u_HYPRE_G)
          call destruirMatriz_HYPRE(A_HYPRE_G)
@@ -1504,9 +1467,6 @@ end program reservoirSimulator
       write(*,*) " 400 continue, valores nos extremos do vetor solucao geo,  "
       write(*,'(6e16.8)') brhsD(1    :6)
       write(*,'(6e16.8)') brhsD(neqD-5: neqD)
-
-     ! write(911,*) BRHSD
-
 
       call timing(t2)
 #ifdef mostrarTempos

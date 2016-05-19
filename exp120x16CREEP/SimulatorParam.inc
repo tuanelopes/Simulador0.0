@@ -1,8 +1,8 @@
 *solver_hidrodinamica{
-skyline
+pardiso
 }
 *solver_geomecanica{
-skyline
+hypre
 }
 *top_external_load_em_pascal{
 1.013250E+05

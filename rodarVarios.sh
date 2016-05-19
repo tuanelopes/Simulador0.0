@@ -2,11 +2,11 @@
  echo "solvers escolhidos no arquivo: exp120x16CREEP/SimulatorParam.inc"
  echo 
  sed '/solver_hidro/ {n; d}' exp120x16CREEP/SimulatorParam.inc -i       # remove linha com o solver para Hidromecannica
- sed '/solver_hidro/ a skyline' exp120x16CREEP/SimulatorParam.inc -i    # inclui linha com o solver para Hidromecannica
+ sed '/solver_hidro/ a pardiso' exp120x16CREEP/SimulatorParam.inc -i    # inclui linha com o solver para Hidromecannica
  sed '/solver_geo/ {n; d}' exp120x16CREEP/SimulatorParam.inc -i         # remove linha com o solver para GEomecannica
- sed '/solver_geo/ a skyline' exp120x16CREEP/SimulatorParam.inc -i      # inclui linha com o solver para GEomecannica
+ sed '/solver_geo/ a pardiso' exp120x16CREEP/SimulatorParam.inc -i      # inclui linha com o solver para GEomecannica
 grep solver_  exp120x16CREEP/SimulatorParam.inc -A 2
-comando="./rodarExperimento.sh exp120x16CREEP 1 4 1 2 GG |grep equacoes:"
+comando="./rodarExperimento.sh exp120x16CREEP 1 4 1 2 PP |grep equacoes:"
 echo $comando;
  echo "solvers escolhidos e lidos pelo simulador "
 eval $comando;
@@ -18,9 +18,9 @@ eval $comando;
  sed '/solver_geo/ a pardiso' exp120x16CREEP/SimulatorParam.inc -i
 grep solver_  exp120x16CREEP/SimulatorParam.inc -A 2
 comando="./rodarExperimento.sh exp120x16CREEP 1 4 1 2 GP |grep equacoes:"
-echo $comando;
- echo "solvers escolhidos e lidos pelo simulador "
-eval $comando;
+#echo $comando;
+#echo "solvers escolhidos e lidos pelo simulador "
+#eval $comando;
 
 
  echo Nova simulacao ...................

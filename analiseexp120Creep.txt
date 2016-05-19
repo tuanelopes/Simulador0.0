@@ -1,0 +1,22 @@
+-bash-3.2$ grep -a -i terations tela_PHG4_1ThrPH_withoutGuess.txt |tail
+ num_iterations=         1021
+ num_iterations=         1051
+ num_iterations=         1020
+ num_iterations=         1052
+ num_iterations=         1049
+ num_iterations=         1051
+ num_iterations=         1051
+ num_iterations=         1020
+ num_iterations=         1052
+ num_iterations=         1052
+-bash-3.2$ grep -a -i terations tela_PHG4_1ThrPH_withGuess.txt |tail
+ num_iterations=          645
+ num_iterations=          523
+ num_iterations=          621
+ num_iterations=          646
+ num_iterations=          522
+ num_iterations=          621
+ num_iterations=          646
+ num_iterations=          522
+ num_iterations=          620
+ num_iterations=          646

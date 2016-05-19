@@ -1,5 +1,5 @@
 *solver_hidrodinamica{
-skyline
+pardiso
 }
 *solver_geomecanica{
 skyline
