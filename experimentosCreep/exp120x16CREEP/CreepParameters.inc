@@ -1,0 +1,15 @@
+*creep_deformation_reference{
+4.3836E-6
+}
+*time_increment_for_creep{
+1.0E+0
+}
+*stress_reference_for_creep{
+1.0E+07
+}
+*power_of_creep_law{
+3.0E+0
+}
+*creep_time_as_multiple_of_geotime{
+1
+}
