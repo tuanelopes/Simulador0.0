@@ -10,6 +10,12 @@
 *tempo_total_de_simulacao{
 5.0D2
 }
+*solver_hidrodinamica{
+pardiso
+}
+*solver_geomecanica{
+pardiso
+}
 *numero_de_calculos_da_velocidade{
 50
 }

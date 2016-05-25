@@ -1,6 +1,3 @@
-*realizacoes{
-1
-}
 *Kozeny-Carman{
 0
 3.60e-12 1.0

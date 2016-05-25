@@ -7,12 +7,6 @@
 *viscosidade_do_oleo{
 1.2664e-07
 }
-*massa_especifica_da_agua{  
-1.0E3
-}
-*massa_especifica_do_oleo{  
-0.88E3
-}
 *saturacao_residual_da_agua{    
 0.20
 }

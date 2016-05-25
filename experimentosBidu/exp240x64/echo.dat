@@ -1092,8 +1092,8 @@ Calculo das velocidades nodais
 
       number of equations . . . . . . . . . . . . (neq    ) =    30480
 
-      number of terms in left-hand-side matrix  . (nalhs  ) =     10859758
+      number of terms in left-hand-side matrix  . (nalhs  ) =            0
 
-      mean half bandwidth . . . . . . . . . . . . (meanbw ) =      356
+      mean half bandwidth . . . . . . . . . . . . (meanbw ) =        0
 
-      memoria necessaria para a matriz do sistema  (Mbytes)  =   0.87E+02
+      memoria necessaria para a matriz do sistema  (Mbytes)  =   0.00E+00

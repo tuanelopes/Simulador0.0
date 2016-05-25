@@ -10,6 +10,12 @@
 *tempo_total_de_simulacao{
 5.0D2
 }
+*solver_hidrodinamica{
+skyline
+}
+*solver_geomecanica{
+skyline
+}
 *numero_de_calculos_da_velocidade{
 50
 }
@@ -50,4 +56,3 @@
 1.1975000e+03 -6.5750000e+02 0.0000000e+00
 1.1975000e+03 -6.4750000e+02 0.0000000e+00
 }
-

@@ -1,3 +1,9 @@
+*solver_hidrodinamica{
+pardiso
+}
+*solver_geomecanica{
+pardiso
+}
 *top_external_load_em_pascal{
 1.013250E+05
 }
